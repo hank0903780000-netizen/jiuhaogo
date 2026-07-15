@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>揪好GO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3E8E5A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="揪好GO">
+<!-- 以下兩支只在 App Store 版（Capacitor 原生外殼）才有作用；PWA 網頁版沒有 window.Capacitor，程式會自動走網頁選照片流程 -->
+<script src="vendor/capacitor.js"></script>
+<script src="vendor/capacitor-camera.js"></script>
+<style>
+:root{
+  --bg:#FAFAFA; --card:#FFFFFF; --ink:#1C1C1E; --ink-soft:#737373; --line:#DBDBDB;
+  --green:#3E8E5A; --green-deep:#2C6B43; --green-soft:#EAF4EE;
+  --amber:#E8A13D; --amber-soft:#FDF3E3; --sky:#5B8DB8; --sky-soft:#EBF2F8;
+  --danger:#C75B4A; --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+/* 固定使用白色主題（使用者指定不要黑底） */
+*{box-sizing:border-box}
+html,body{margin:0; padding:0; height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  line-height:1.6; display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+  max-width:560px; margin:0 auto;
+}
+.apphead{
+  padding:calc(10px + env(safe-area-inset-top)) 16px 8px;
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg); border-bottom:1px solid var(--line); flex:0 0 auto;
+}
+.apphead .brand{font-weight:800; font-size:20px; letter-spacing:.02em}
+.apphead .brand em{font-style:normal; color:var(--green)}
+.apphead .loc{font-size:12px; color:var(--ink-soft)}
+.screen{flex:1; overflow-y:auto; padding:4px 14px 24px; -webkit-overflow-scrolling:touch}
+.page{display:none}
+.page.active{display:block}
+.section-t{font-size:13px; letter-spacing:.12em; color:var(--ink-soft); margin:18px 2px 8px; font-weight:700}
+.card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px}
+button{
+  font-family:inherit; font-size:14px; border:none; cursor:pointer;
+  border-radius:999px; padding:9px 18px; font-weight:700;
+  transition:transform .12s ease; background:none; color:inherit;
+}
+button:active{transform:scale(.96)}
+button:focus-visible{outline:3px solid var(--sky); outline-offset:2px}
+.btn-green{background:var(--green); color:#fff}
+.btn-ghost{background:var(--green-soft); color:var(--green-deep)}
+.btn-amber{background:var(--amber); color:#3A2A0D}
+.btn-sm{padding:7px 14px; font-size:13px}
+.joined{background:var(--line); color:var(--ink-soft)}
+input,select,textarea{
+  font-family:inherit; font-size:15px; width:100%;
+  border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+  background:var(--card); color:var(--ink); margin-bottom:10px;
+}
+label{font-size:12.5px; color:var(--ink-soft); font-weight:700}
+/* stories + feed */
+.stories{display:flex; gap:12px; overflow-x:auto; padding:12px 2px 8px; scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+button.story{flex:0 0 auto; text-align:center; font-size:10.5px; color:var(--ink-soft); padding:0; font-weight:600; border-radius:0}
+.story .sr{
+  width:62px; height:62px; border-radius:50%; padding:3px; margin-bottom:3px;
+  background:conic-gradient(var(--amber), var(--green), var(--sky), var(--amber)); display:flex;
+}
+.story .si{
+  flex:1; border-radius:50%; background:var(--green-soft); border:2.5px solid var(--card);
+  display:flex; align-items:center; justify-content:center; font-size:28px; overflow:hidden;
+}
+.story .si img{width:100%; height:100%; object-fit:cover}
+.story.add .sr{background:var(--line)}
+.story.add .si{color:var(--green); font-size:24px; font-weight:700}
+.post{padding:0; overflow:hidden}
+.post-head{display:flex; gap:10px; align-items:center; padding:10px 12px}
+.post-head .pa{
+  width:36px; height:36px; border-radius:50%; background:var(--green-soft); flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center; font-size:18px; overflow:hidden;
+}
+.post-head .pa img{width:100%; height:100%; object-fit:cover}
+.post-head b{font-size:13.5px; display:block; line-height:1.3}
+.post-head .sub{font-size:11px; color:var(--ink-soft)}
+.post-photo{
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  font-size:110px; position:relative; cursor:pointer; user-select:none;
+  background:linear-gradient(135deg, var(--green-soft), var(--sky-soft));
+}
+.post-photo.warm{background:linear-gradient(135deg, var(--amber-soft), var(--green-soft))}
+.post-photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.bigheart{position:absolute; font-size:80px; pointer-events:none; z-index:2; animation:heartpop .7s ease forwards}
+@keyframes heartpop{0%{transform:scale(0);opacity:.95}55%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:0}}
+.post-body{padding:9px 12px 13px; font-size:13.5px}
+.post-body p{margin:4px 0 2px; line-height:1.55}
+.post-actions{display:flex; gap:14px; margin-bottom:4px}
+button.pact{padding:2px; font-size:23px; border-radius:8px; line-height:1}
+.plikes{font-size:13px}
+.ptime{font-size:11px; color:var(--ink-soft)}
+/* walks */
+.walk-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.walk-top b{font-size:15px}
+.walk-when{font-size:12px; color:var(--green); font-weight:700; white-space:nowrap}
+.walk-meta{font-size:12.5px; color:var(--ink-soft)}
+.walk-foot{display:flex; justify-content:space-between; align-items:center; margin-top:8px}
+.count{font-size:12px; color:var(--ink-soft)}
+.pill{font-size:10.5px; background:var(--amber-soft); color:var(--amber); font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap}
+/* profile sheet */
+button.host-link{color:var(--green); font-weight:700; padding:0; font-size:inherit; border-radius:4px; text-decoration:underline; text-underline-offset:2px}
+.post-head.tappable{cursor:pointer}
+.pgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+button.pt{
+  aspect-ratio:1; border-radius:10px; padding:0; overflow:hidden;
+  background:linear-gradient(135deg, var(--green-soft), var(--sky-soft));
+  display:flex; align-items:center; justify-content:center; font-size:36px;
+}
+.pt img{width:100%; height:100%; object-fit:cover}
+/* 服務分段 */
+.seg{display:flex; background:var(--green-soft); border-radius:999px; padding:4px; margin-top:12px}
+.seg button{flex:1; background:transparent; color:var(--ink-soft); padding:8px 0; font-size:13.5px; border-radius:999px}
+.seg button.on{background:var(--card); color:var(--ink); box-shadow:0 2px 8px rgba(0,0,0,.08)}
+/* 配對 swipe */
+.match-stack{position:relative; height:380px; margin-top:12px}
+.mcard{
+  position:absolute; inset:0; background:var(--card); border:1px solid var(--line);
+  border-radius:20px; overflow:hidden; display:flex; flex-direction:column;
+  box-shadow:var(--shadow); touch-action:none; user-select:none;
+}
+.mcard.back{transform:scale(.95) translateY(10px); z-index:1}
+.mcard.front{z-index:2; cursor:grab}
+.mcard .mphoto{flex:1; background:linear-gradient(135deg,var(--green-soft),var(--sky-soft)); display:flex; align-items:center; justify-content:center; font-size:88px}
+.mcard .minfo{padding:12px 16px 14px}
+.mcard .minfo b{font-size:17px}
+.mcard .minfo .sub{font-size:12.5px; color:var(--ink-soft)}
+.mbtns{display:flex; justify-content:center; gap:28px; margin-top:16px}
+.mbtn{
+  width:56px; height:56px; border-radius:50%; font-size:23px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+}
+.mbtn.like{background:var(--green); color:#fff; border:none}
+.mbtn.nope{color:var(--danger)}
+.match-empty{
+  height:380px; margin-top:12px; border:2px dashed var(--line); border-radius:20px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; color:var(--ink-soft); font-size:13.5px; text-align:center; padding:20px;
+}
+.match-empty .big{font-size:44px}
+.match-pop{
+  position:fixed; inset:0; z-index:45; background:rgba(0,0,0,.55);
+  display:none; align-items:center; justify-content:center;
+}
+.match-pop.show{display:flex}
+.match-pop .box{
+  background:var(--card); border-radius:22px; padding:26px 22px; text-align:center;
+  width:80%; max-width:340px; box-shadow:var(--shadow);
+}
+.match-pop .big{font-size:40px}
+.match-pop b{font-size:19px; display:block; margin:6px 0 2px}
+.match-pop p{font-size:13px; color:var(--ink-soft); margin:0 0 14px}
+.match-pop .btns{display:flex; flex-direction:column; gap:8px}
+/* 主題賽 */
+.contest{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px}
+button.cat-entry{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:10px 6px; text-align:center; font-size:11px; color:var(--ink-soft);
+  font-weight:400; line-height:1.5;
+}
+.cat-entry .ce{font-size:33px; display:block}
+.cat-entry b{display:block; color:var(--ink); font-size:12.5px}
+.cat-entry .v{font-variant-numeric:tabular-nums}
+.cat-entry.voted{border-color:var(--green); background:var(--green-soft)}
+.cat-entry.voted .v{color:var(--green-deep); font-weight:700}
+/* walk map */
+.mapbox{position:relative; border-radius:18px; overflow:hidden; border:1px solid var(--line); margin-bottom:4px; background:#DCE8D5}
+.mapbox svg{display:block; width:100%; height:auto}
+.pin{cursor:pointer}
+.grp-head{display:flex; justify-content:space-between; align-items:baseline; margin:18px 2px 8px}
+.grp-head b{font-size:14.5px}
+.grp-head span{font-size:11.5px; color:var(--ink-soft)}
+/* parks */
+.busy{display:flex; align-items:flex-end; gap:5px; height:44px; margin-top:8px}
+.busy i{flex:1; background:var(--green-soft); border-radius:4px 4px 0 0; display:block}
+.busy i.hot{background:var(--green)}
+.busy-l{display:flex; gap:5px; font-size:10px; color:var(--ink-soft)}
+.busy-l span{flex:1; text-align:center}
+.tagrow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.tag{font-size:11.5px; background:var(--sky-soft); color:var(--sky); padding:3px 10px; border-radius:999px; font-weight:700}
+.tag.g{background:var(--green-soft); color:var(--green-deep)}
+/* dog page */
+.dogcard{display:flex; gap:14px; align-items:center}
+.dog-photo{
+  width:78px; height:78px; border-radius:50%; background:var(--green-soft);
+  display:flex; align-items:center; justify-content:center; font-size:40px;
+  overflow:hidden; flex:0 0 auto; border:3px solid var(--green);
+}
+.dog-photo img{width:100%; height:100%; object-fit:cover}
+.dogcard b{font-size:17px}
+.dogcard .sub{font-size:12.5px; color:var(--ink-soft)}
+.stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.stat{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 6px; text-align:center}
+.stat b{font-size:19px; color:var(--green); font-variant-numeric:tabular-nums; display:block}
+.stat span{font-size:10.5px; color:var(--ink-soft)}
+/* gig + shop (demo) */
+.gig-top{display:flex; justify-content:space-between; align-items:baseline}
+.gig-top b{font-size:15px}
+.price{color:var(--green); font-weight:800; font-size:16px; font-variant-numeric:tabular-nums}
+.gig .sub{font-size:12.5px; color:var(--ink-soft); margin:2px 0 10px}
+.gig-foot{display:flex; justify-content:space-between; align-items:center}
+.badge{font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px}
+.badge.walk{background:var(--green-soft); color:var(--green-deep)}
+.badge.feed{background:var(--amber-soft); color:var(--amber)}
+.badge.sleep{background:var(--sky-soft); color:var(--sky)}
+.shop-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.prod{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:6px}
+.prod .pic{aspect-ratio:1.4; border-radius:12px; background:var(--amber-soft); display:flex; align-items:center; justify-content:center; font-size:34px}
+.prod b{font-size:13.5px; line-height:1.4}
+.prod .maker{font-size:11px; color:var(--ink-soft)}
+.prod .row{display:flex; justify-content:space-between; align-items:center; margin-top:auto}
+/* tabbar */
+.tabbar{
+  display:flex; border-top:1px solid var(--line); background:var(--card);
+  padding:6px 4px calc(8px + env(safe-area-inset-bottom)); flex:0 0 auto;
+}
+.tab{flex:1; border-radius:12px; padding:5px 2px; display:flex; flex-direction:column; align-items:center; gap:1px; font-size:10px; color:var(--ink-soft); font-weight:600}
+.tab .ti{font-size:21px; line-height:1.2}
+.tab.on{color:var(--green)}
+/* modals */
+.overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:40;
+  display:none; align-items:flex-end; justify-content:center;
+}
+.overlay.show{display:flex}
+.sheet{
+  background:var(--card); border-radius:22px 22px 0 0; width:100%; max-width:560px;
+  padding:20px 18px calc(20px + env(safe-area-inset-bottom)); max-height:85dvh; overflow-y:auto;
+}
+.sheet h3{margin:0 0 12px; font-size:17px}
+.preview{
+  width:100%; aspect-ratio:1; border-radius:14px; background:var(--green-soft);
+  display:flex; align-items:center; justify-content:center; font-size:40px;
+  overflow:hidden; margin-bottom:10px;
+}
+.preview img{width:100%; height:100%; object-fit:cover}
+.toast{
+  position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:var(--bg); padding:10px 22px; border-radius:999px;
+  font-size:14px; font-weight:700; opacity:0; pointer-events:none;
+  transition:opacity .25s, transform .25s; z-index:50; white-space:nowrap; max-width:90vw;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+.hint{font-size:11.5px; color:var(--ink-soft); margin:8px 2px}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important}}
+</style>
+</head>
+<body>
+
+<header class="apphead">
+  <div class="brand">揪好<em>GO</em></div>
+  <div class="loc">📍 桃園市藝文特區・試用版</div>
+</header>
+
+<main class="screen" id="screen">
+
+  <!-- 動態 -->
+  <section class="page active" id="page-home">
+    <div class="stories" id="stories-row">
+      <button class="story add" onclick="openCompose()"><span class="sr"><span class="si">＋</span></span>發布照片</button>
+      <button class="story" onclick="toast('柴柴的限時動態（示意）')"><span class="sr"><span class="si">🐕</span></span>柴柴</button>
+      <button class="story" onclick="toast('圓圓的限時動態（示意）')"><span class="sr"><span class="si">🐱</span></span>圓圓</button>
+      <button class="story" onclick="toast('布丁的限時動態（示意）')"><span class="sr"><span class="si">🐩</span></span>布丁</button>
+      <button class="story" onclick="toast('麻糬的限時動態（示意）')"><span class="sr"><span class="si">🐶</span></span>麻糬</button>
+    </div>
+    <div id="feed"></div>
+  </section>
+
+  <!-- 揪團 -->
+  <section class="page" id="page-walk">
+    <div class="card" id="weather-bar" style="display:flex;align-items:center;gap:12px;margin-top:12px">
+      <span id="wx-icon" style="font-size:32px">🌤</span>
+      <div style="flex:1">
+        <b style="font-size:15px"><span id="wx-temp">--</span>°C・降雨機率 <span id="wx-rain">--</span>%</b>
+        <div class="walk-meta" id="wx-verdict">讀取藝文特區即時天氣中…</div>
+      </div>
+    </div>
+    <div class="section-t">藝文特區・揪團地圖（點公園跳到該區）</div>
+    <div class="mapbox" aria-label="揪團地圖">
+      <svg viewBox="0 0 360 235" xmlns="http://www.w3.org/2000/svg" role="img">
+        <rect width="360" height="235" fill="#DCE8D5"/>
+        <path d="M0 62 L360 42" stroke="#fff" stroke-width="10" fill="none"/>
+        <path d="M0 155 L360 175" stroke="#fff" stroke-width="14" fill="none"/>
+        <path d="M120 0 L100 235" stroke="#fff" stroke-width="8" fill="none"/>
+        <path d="M260 0 L280 235" stroke="#fff" stroke-width="8" fill="none"/>
+        <ellipse cx="65" cy="108" rx="42" ry="30" fill="#B9D8AC"/>
+        <ellipse cx="190" cy="92" rx="50" ry="34" fill="#B9D8AC"/>
+        <ellipse cx="310" cy="122" rx="38" ry="28" fill="#B9D8AC"/>
+        <g class="pin" onclick="gotoPark('風禾公園')">
+          <circle cx="190" cy="86" r="17" fill="#3E8E5A"/>
+          <text x="190" y="92" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-風禾公園">0</text>
+          <text x="190" y="122" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">風禾公園</text>
+        </g>
+        <g class="pin" onclick="gotoPark('玉山公園')">
+          <circle cx="65" cy="102" r="17" fill="#3E8E5A"/>
+          <text x="65" y="108" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-玉山公園">0</text>
+          <text x="65" y="138" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">玉山公園</text>
+        </g>
+        <g class="pin" onclick="gotoPark('虎頭山公園')">
+          <circle cx="310" cy="116" r="17" fill="#3E8E5A"/>
+          <text x="310" y="122" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-虎頭山公園">0</text>
+          <text x="310" y="152" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">虎頭山公園</text>
+        </g>
+      </svg>
+    </div>
+    <p class="hint" style="margin-top:6px">圓圈數字＝該公園目前的揪團數</p>
+    <div id="walk-groups"></div>
+    <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="openWalkForm()">🐾 我要發起揪團</button>
+  </section>
+
+  <!-- 地圖/公園 -->
+  <section class="page" id="page-map">
+    <div class="section-t">公園即時狗況</div>
+    <div id="park-list"></div>
+    <p class="hint">💡 正式版將以 GPS 打卡統計即時狗數與熱門時段。</p>
+  </section>
+
+  <!-- 配對交友 -->
+  <section class="page" id="page-match">
+    <div class="section-t">幫寶貝找新朋友（左滑略過・右滑喜歡）</div>
+    <div class="tagrow" style="margin-top:0">
+      <span class="tag">品種相近優先</span>
+      <span class="tag g">距離 3km 內</span>
+      <span class="tag g">體型相近</span>
+    </div>
+    <div class="match-stack" id="mstack"></div>
+    <div class="match-empty" id="mempty" hidden>
+      <span class="big">🐾</span>
+      附近的毛孩今天滑完了！<br>明天會有新朋友出現
+      <button class="btn-ghost btn-sm" onclick="resetMatch()">再看一次</button>
+    </div>
+    <div class="mbtns" id="mbtns">
+      <button class="mbtn nope" onclick="swipeCard(-1)" aria-label="略過">✖</button>
+      <button class="mbtn like" onclick="swipeCard(1)" aria-label="喜歡">💚</button>
+    </div>
+    <p class="hint">💡 定位是「找玩伴」：配對成功直接約一起遛狗。</p>
+  </section>
+
+  <!-- 我的寶貝 -->
+  <section class="page" id="page-dog">
+    <div class="section-t">我的寶貝（狗、貓都可以）</div>
+    <div id="pet-list"></div>
+    <button class="btn-ghost" style="width:100%" onclick="openPetForm(null)">＋ 新增寶貝</button>
+    <div class="section-t">累積紀錄（存在你手機裡）</div>
+    <div class="stat-grid">
+      <div class="stat"><b id="st-posts">0</b><span>發布貼文</span></div>
+      <div class="stat"><b id="st-walks">0</b><span>報名揪團</span></div>
+      <div class="stat"><b id="st-likes">0</b><span>收到的讚</span></div>
+    </div>
+    <p class="hint">🔒 試用版資料只存在這支手機（多人互通是下一階段接上雲端後開放）。</p>
+    <button class="btn-ghost btn-sm" style="width:100%" onclick="resetAll()">清除試用資料，重新體驗</button>
+  </section>
+
+  <!-- 服務：接單＋商城（示意） -->
+  <section class="page" id="page-serve">
+    <div class="seg">
+      <button class="on" id="seg-gig" onclick="segServe('gig')">🤝 接單委託</button>
+      <button id="seg-shop" onclick="segServe('shop')">🦴 零食商城</button>
+    </div>
+    <div id="serve-gig">
+    <div class="section-t">附近的委託（示意，第二階段開放）</div>
+    <div class="card gig">
+      <div class="gig-top"><b>幫波比遛 40 分鐘</b><span class="price">NT$ 250</span></div>
+      <div class="sub">📍 藝文特區・風禾公園周邊</div>
+      <div class="gig-foot"><span class="badge walk">🐕 代遛</span><button class="btn-green btn-sm" onclick="toast('接單功能第二階段開放 🤝')">接單</button></div>
+    </div>
+    <div class="card gig">
+      <div class="gig-top"><b>出差 3 天・上門餵貓</b><span class="price">NT$ 900</span></div>
+      <div class="sub">📍 中路重劃區</div>
+      <div class="gig-foot"><span class="badge feed">🐱 餵貓</span><button class="btn-green btn-sm" onclick="toast('接單功能第二階段開放 🤝')">接單</button></div>
+    </div>
+    <div class="card gig">
+      <div class="gig-top"><b>出國 5 晚・貓咪陪睡員</b><span class="price">NT$ 2,000<small style="font-size:11px">/晚</small></span></div>
+      <div class="sub">📍 藝文特區・需留宿＋每晚回報影片</div>
+      <div class="gig-foot"><span class="badge sleep">🌙 陪睡</span><button class="btn-green btn-sm" onclick="toast('接單功能第二階段開放 🤝')">接單</button></div>
+    </div>
+    </div>
+
+    <div id="serve-shop" hidden>
+    <div class="section-t">在地手作零食（示意，第二階段開放）</div>
+    <div class="shop-grid">
+      <div class="prod"><div class="pic">🦴</div><b>低溫烘雞肉乾 100g</b><span class="maker">🏪 汪汪手作坊</span><div class="row"><span class="price">NT$ 180</span><button class="btn-ghost btn-sm" onclick="toast('商城第二階段開放 🛒')">＋</button></div></div>
+      <div class="prod"><div class="pic">🍪</div><b>南瓜燕麥餅乾</b><span class="maker">🏪 毛日子烘焙</span><div class="row"><span class="price">NT$ 150</span><button class="btn-ghost btn-sm" onclick="toast('商城第二階段開放 🛒')">＋</button></div></div>
+      <div class="prod"><div class="pic">🐟</div><b>鮭魚凍乾 60g</b><span class="maker">🏪 海邊小廚</span><div class="row"><span class="price">NT$ 220</span><button class="btn-ghost btn-sm" onclick="toast('商城第二階段開放 🛒')">＋</button></div></div>
+      <div class="prod"><div class="pic">🥩</div><b>牛肉潔牙棒 6 入</b><span class="maker">🏪 汪汪手作坊</span><div class="row"><span class="price">NT$ 160</span><button class="btn-ghost btn-sm" onclick="toast('商城第二階段開放 🛒')">＋</button></div></div>
+    </div>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button class="tab on" id="tab-home" onclick="switchTab('home')"><span class="ti">🏠</span>動態</button>
+  <button class="tab" id="tab-walk" onclick="switchTab('walk')"><span class="ti">🐾</span>揪團</button>
+  <button class="tab" id="tab-map" onclick="switchTab('map')"><span class="ti">🗺️</span>公園</button>
+  <button class="tab" id="tab-match" onclick="switchTab('match')"><span class="ti">💕</span>配對</button>
+  <button class="tab" id="tab-dog" onclick="switchTab('dog')"><span class="ti">💛</span>我的寶貝</button>
+  <button class="tab" id="tab-serve" onclick="switchTab('serve')"><span class="ti">🤝</span>服務</button>
+</nav>
+
+<!-- 發文 -->
+<div class="overlay" id="ov-compose">
+  <div class="sheet">
+    <h3>發布毛孩照片 📸</h3>
+    <div class="preview" id="compose-preview" role="button" tabindex="0" onclick="pickPhoto('compose')">點我選照片</div>
+    <input type="file" id="compose-file" accept="image/*" hidden onchange="pickComposePhoto(this)">
+    <div id="compose-pet-row" hidden>
+      <label>這是誰的照片</label>
+      <select id="compose-pet"></select>
+    </div>
+    <label>想說的話</label>
+    <textarea id="compose-caption" rows="2" placeholder="今天又是快樂的一天 🐾 #藝文特區狗友"></textarea>
+    <button class="btn-green" style="width:100%" onclick="publishPost()">發布</button>
+    <button class="btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="closeOv('ov-compose')">取消</button>
+  </div>
+</div>
+
+<!-- 開團 -->
+<div class="overlay" id="ov-walk">
+  <div class="sheet">
+    <h3>發起揪團 🐾</h3>
+    <label>揪團標題</label>
+    <input id="wf-title" placeholder="例：風禾公園傍晚散步團">
+    <label>公園</label>
+    <select id="wf-park">
+      <option>風禾公園</option><option>玉山公園</option><option>虎頭山公園</option>
+    </select>
+    <label>時間</label>
+    <input id="wf-time" placeholder="例：今天 17:30">
+    <button class="btn-green" style="width:100%" onclick="createWalk()">發起</button>
+    <button class="btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="closeOv('ov-walk')">取消</button>
+  </div>
+</div>
+
+<!-- 寶貝檔案（初次設定／新增／編輯共用） -->
+<div class="overlay" id="ov-onboard">
+  <div class="sheet">
+    <h3 id="ob-title">歡迎來到揪好GO！先介紹你的寶貝 🐾</h3>
+    <div class="preview" id="ob-preview" style="aspect-ratio:2.2" role="button" tabindex="0" onclick="pickPhoto('ob')">📷 點我放寶貝照片（可跳過）</div>
+    <input type="file" id="ob-file" accept="image/*" hidden onchange="pickObPhoto(this)">
+    <label>寶貝的名字</label>
+    <input id="ob-name" placeholder="例：波比">
+    <label>他是</label>
+    <select id="ob-type">
+      <option value="狗">🐶 狗狗</option>
+      <option value="貓">🐱 貓咪</option>
+      <option value="其他">🐰 其他毛孩</option>
+    </select>
+    <label>品種／描述</label>
+    <input id="ob-breed" placeholder="例：柯基・3 歲・男生">
+    <button class="btn-green" style="width:100%" onclick="savePet()">儲存</button>
+    <button class="btn-ghost btn-sm" id="ob-cancel" style="width:100%;margin-top:8px" onclick="closeOv('ov-onboard')" hidden>取消</button>
+  </div>
+</div>
+
+<!-- 配對成功彈窗 -->
+<div class="match-pop" id="mpop">
+  <div class="box">
+    <span class="big">🎉</span>
+    <b>配對成功！</b>
+    <p><span id="mpop-me">你的寶貝</span> 💚 <span id="mpop-name">蛋捲</span>・你們都想認識對方</p>
+    <div class="btns">
+      <button class="btn-green" onclick="matchToWalk()">🐾 約牠一起遛狗</button>
+      <button class="btn-ghost btn-sm" onclick="closePop()">繼續滑</button>
+    </div>
+  </div>
+</div>
+
+<!-- 個人檔案 -->
+<div class="overlay" id="ov-profile" onclick="if(event.target===this)closeOv('ov-profile')">
+  <div class="sheet" id="profile-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- 工具 ----------
+const $ = id => document.getElementById(id);
+let toastTimer;
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 1900);
+}
+function load(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e){ return fallback; }
+}
+function save(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }
+  catch(e){ toast('手機儲存空間不足，照片存不進去了 😥'); }
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// 壓縮照片成 dataURL（最長邊 900px）
+function compress(file, cb){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const max = 900;
+      let w = img.width, h = img.height;
+      if(Math.max(w,h) > max){ const r = max/Math.max(w,h); w = Math.round(w*r); h = Math.round(h*r); }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(cv.toDataURL('image/jpeg', .8));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+// 壓縮已經是 dataURL 的圖（原生相機回傳用）
+function compressDataUrl(dataUrl, cb){
+  const img = new Image();
+  img.onload = ()=>{
+    const max = 900;
+    let w = img.width, h = img.height;
+    if(Math.max(w,h) > max){ const r = max/Math.max(w,h); w = Math.round(w*r); h = Math.round(h*r); }
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(img, 0, 0, w, h);
+    cb(cv.toDataURL('image/jpeg', .8));
+  };
+  img.src = dataUrl;
+}
+// 選照片：App Store 版走原生相機/相簿選單；PWA 網頁版走一般的檔案選擇
+function pickPhoto(kind){
+  const isNative = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+  if(!isNative){
+    document.getElementById(kind === 'ob' ? 'ob-file' : 'compose-file').click();
+    return;
+  }
+  const { Camera, CameraResultType, CameraSource } = Capacitor.Plugins;
+  Camera.getPhoto({
+    quality: 80,
+    resultType: CameraResultType.DataUrl,
+    source: CameraSource.Prompt,
+    promptLabelHeader: '選擇照片',
+    promptLabelPhoto: '從相簿選擇',
+    promptLabelPicture: '拍照'
+  }).then(photo=>{
+    compressDataUrl(photo.dataUrl, url=>{
+      if(kind === 'ob'){
+        obPhoto = url;
+        $('ob-preview').innerHTML = '<img alt="預覽" src="'+url+'">';
+      }else{
+        composePhoto = url;
+        $('compose-preview').innerHTML = '<img alt="預覽" src="'+url+'">';
+      }
+    });
+  }).catch(()=>{ /* 使用者取消拍照，不用提示 */ });
+}
+
+// ---------- 狀態 ----------
+// 多寵物：pets 陣列（狗、貓、其他都可以）；自動把舊版單狗檔案搬過來
+let pets = load('jhg_pets', null);
+if(!pets){
+  const legacy = load('jhg_profile', null);
+  pets = legacy ? [{id:'pet1', name:legacy.name, type:'狗', breed:legacy.breed||'', photo:legacy.photo||null}] : [];
+  if(legacy) save('jhg_pets', pets);
+}
+function firstPet(){ return pets[0] || null; }
+function petEmoji(t){ return t==='貓' ? '🐱' : (t==='其他' ? '🐰' : '🐶'); }
+let contestVote = load('jhg_contest', -1);
+let posts = load('jhg_posts', []);            // 使用者發的文
+let seedLikes = load('jhg_seedlikes', {});    // 內建貼文的按讚
+let userWalks = load('jhg_userwalks', []);    // 使用者開的團
+let joined = load('jhg_joined', {});          // 報名狀態
+let subs = load('jhg_subs', {});              // 公園訂閱
+
+// ---------- Tab ----------
+const TABS = ['home','walk','map','match','dog','serve'];
+function segServe(which){
+  $('serve-gig').hidden = which !== 'gig';
+  $('serve-shop').hidden = which !== 'shop';
+  $('seg-gig').classList.toggle('on', which === 'gig');
+  $('seg-shop').classList.toggle('on', which === 'shop');
+}
+function switchTab(name){
+  TABS.forEach(t=>{
+    $('page-'+t).classList.toggle('active', t===name);
+    $('tab-'+t).classList.toggle('on', t===name);
+  });
+  $('screen').scrollTop = 0;
+  if(name==='dog') renderPets();
+}
+
+// ---------- 動態牆 ----------
+const SEED_POSTS = [
+  {id:'s1', host:'柴柴爸', name:'柴柴 shiba_chai', sub:'柴柴爸・📍 風禾公園', emoji:'🐕', warm:false,
+   caption:'<b>柴柴</b> 今天在風禾公園跑到瘋掉，回家秒睡 🐕💨 #藝文特區狗友 #風禾公園', time:'2 小時前・雙擊照片試試 ❤️', likes:1204},
+  {id:'s2', host:'圓圓麻', name:'圓圓 round_cat', sub:'圓圓麻・📍 藝文特區', emoji:'🐱', warm:true,
+   caption:'<b>圓圓</b> 參賽 #奇怪睡姿大賽 🏆 這樣睡真的舒服嗎 😹 #曬貓 #貓奴日常', time:'5 小時前', likes:2871},
+  {id:'s3', host:'布丁姐', name:'布丁 pudding_poodle', sub:'布丁姐・📍 玉山公園', emoji:'🐩', warm:false,
+   caption:'<b>布丁</b> 剪完毛的第一次散步，自信爆棚 ✂️✨ #貴賓日常', time:'昨天', likes:864}
+];
+// ---------- 主揪／飼主個人檔案 ----------
+const PROFILES = {
+  '小白媽':{dog:'小白', emoji:'🐕‍🦺', breed:'馬爾濟斯・2 歲・女生', bio:'風禾公園常駐團主揪，每週二・四準時開走',
+    gallery:[{e:'🐕‍🦺',c:'小白今天剪了新造型 ✂️'},{e:'🎾',c:'撿球撿到不想回家'},{e:'🌳',c:'風禾公園的傍晚最舒服'}]},
+  '蛋捲媽':{dog:'蛋捲', emoji:'🐶', breed:'柯基・3 歲・女生', bio:'短腿犬愛好者，柯基小短腿團發起人',
+    gallery:[{e:'🐶',c:'蛋捲的屁屁搖起來'},{e:'🍳',c:'名字的由來 😂'}]},
+  '柴柴爸':{dog:'柴柴', emoji:'🐕', breed:'柴犬・4 歲・男生', bio:'夜間散步團主揪，柴犬固執行為研究專家',
+    gallery:[{e:'🐕',c:'今天在風禾公園跑到瘋掉 🐕💨'},{e:'🌙',c:'夜散最高'},{e:'😤',c:'不想回家的坐下抗議'}]},
+  '黑糖麻麻':{dog:'黑糖', emoji:'🦮', breed:'黃金獵犬・5 歲・女生', bio:'週六晨走團主揪，大型犬友善推廣者',
+    gallery:[{e:'🦮',c:'晨走 90 分鐘輕輕鬆鬆'},{e:'💧',c:'玩水之後的落湯雞'}]},
+  '圓圓麻':{dog:'圓圓', emoji:'🐱', breed:'英短・3 歲・女生', bio:'資深貓奴，#奇怪睡姿大賽 常勝軍飼主',
+    gallery:[{e:'🐱',c:'參賽 #奇怪睡姿大賽 🏆'},{e:'😹',c:'又睡成一坨'}]},
+  '布丁姐':{dog:'布丁', emoji:'🐩', breed:'貴賓・4 歲・女生', bio:'玉山公園散步固定班底',
+    gallery:[{e:'🐩',c:'剪完毛自信爆棚 ✂️✨'}]}
+};
+function openProfile(key){
+  let html = '';
+  if(key === '__me__'){
+    const petsLine = pets.length
+      ? pets.map(p=>petEmoji(p.type)+' '+esc(p.name)).join('、')
+      : '還沒建立寶貝檔案';
+    const fp = firstPet();
+    const avatar = (fp && fp.photo) ? '<img alt="" src="'+fp.photo+'">' : (fp ? petEmoji(fp.type) : '🐾');
+    const tiles = posts.slice().reverse().map(p=>
+      '<button class="pt" onclick="toast(\'（你的貼文）\')"><img alt="" src="'+p.photo+'"></button>').join('')
+      || '<p class="hint">還沒發過貼文，去動態牆發第一篇吧 📸</p>';
+    html = '<div class="dogcard" style="margin-bottom:14px"><div class="dog-photo">'+avatar+'</div>' +
+      '<div><b>我的寶貝</b><div class="sub">'+petsLine+'</div>' +
+      '<div class="sub">你 ・ 主揪過 '+userWalks.length+' 團 ・ '+posts.length+' 篇貼文</div></div></div>' +
+      '<div class="section-t" style="margin-top:0">發過的貼文</div><div class="pgrid">'+tiles+'</div>';
+  }else{
+    const p = PROFILES[key];
+    if(!p){ toast('找不到這位飼主'); return; }
+    const hostCount = SEED_WALKS.filter(w=>w.host===key).length;
+    const tiles = p.gallery.map(g=>
+      '<button class="pt" onclick="toast(\''+g.c.replace(/'/g,'')+'\')">'+g.e+'</button>').join('');
+    html = '<div class="dogcard" style="margin-bottom:14px"><div class="dog-photo">'+p.emoji+'</div>' +
+      '<div><b>'+p.dog+'</b><div class="sub">'+p.breed+'</div>' +
+      '<div class="sub">飼主：'+key+' ・ 主揪 '+hostCount+' 團 ・ '+p.gallery.length+' 篇貼文</div></div></div>' +
+      '<p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px">「'+p.bio+'」</p>' +
+      '<div class="section-t" style="margin-top:0">發過的貼文（點看內容）</div><div class="pgrid">'+tiles+'</div>';
+  }
+  html += '<button class="btn-ghost btn-sm" style="width:100%;margin-top:16px" onclick="closeOv(\'ov-profile\')">關閉</button>';
+  $('profile-body').innerHTML = html;
+  $('ov-profile').classList.add('show');
+}
+function likeState(id){
+  if(id.startsWith('s')){
+    const seed = SEED_POSTS.find(p=>p.id===id);
+    if(!seedLikes[id]) seedLikes[id] = {n:seed.likes, on:false};
+    return seedLikes[id];
+  }
+  return posts.find(p=>p.id===id);
+}
+function persistLikes(id){
+  if(id.startsWith('s')) save('jhg_seedlikes', seedLikes);
+  else save('jhg_posts', posts);
+}
+function likePost(id){
+  const st = likeState(id);
+  st.on = !st.on;
+  st.n += st.on ? 1 : -1;
+  persistLikes(id);
+  $('pl-'+id).textContent = st.on ? '❤️' : '🤍';
+  $('plc-'+id).textContent = st.n.toLocaleString() + ' 個讚';
+}
+let lastTap = {};
+function dblTap(e, id){
+  const now = Date.now();
+  if(lastTap[id] && now - lastTap[id] < 350){
+    const photo = $('pp-'+id);
+    const h = document.createElement('span');
+    h.className = 'bigheart'; h.textContent = '❤️';
+    photo.appendChild(h);
+    setTimeout(()=>h.remove(), 700);
+    const st = likeState(id);
+    if(!st.on) likePost(id);
+    lastTap[id] = 0;
+  }else{ lastTap[id] = now; }
+}
+function postHtml(p){
+  const st = likeState(p.id);
+  const media = p.photo
+    ? '<img alt="毛孩照片" src="'+p.photo+'">'
+    : p.emoji;
+  const avatar = p.avatar ? '<img alt="" src="'+p.avatar+'">' : (p.emoji || '🐶');
+  const hostKey = p.host || '__me__';
+  return '<div class="card post">' +
+    '<div class="post-head tappable" onclick="openProfile(\''+hostKey+'\')" title="看飼主檔案"><span class="pa">'+avatar+'</span>' +
+    '<div><b>'+p.name+'</b><span class="sub">'+p.sub+'</span></div></div>' +
+    '<div class="post-photo'+(p.warm?' warm':'')+'" id="pp-'+p.id+'" onclick="dblTap(event,\''+p.id+'\')">'+media+'</div>' +
+    '<div class="post-body"><div class="post-actions">' +
+    '<button class="pact" id="pl-'+p.id+'" onclick="likePost(\''+p.id+'\')">'+(st.on?'❤️':'🤍')+'</button>' +
+    '<button class="pact" onclick="toast(\'留言功能下一版開放 💬\')">💬</button>' +
+    '<button class="pact" onclick="toast(\'已複製分享連結（示意）✈️\')">✈️</button></div>' +
+    '<b class="plikes" id="plc-'+p.id+'">'+st.n.toLocaleString()+' 個讚</b>' +
+    '<p>'+p.caption+'</p>' +
+    '<span class="ptime">'+p.time+'</span></div></div>';
+}
+function renderFeed(){
+  let html = '';
+  posts.slice().reverse().forEach(p=>{ html += postHtml(p); });
+  html += postHtml(SEED_POSTS[0]);
+  // 揪團卡穿插在動態中
+  html += '<div class="card"><div class="walk-top"><b>風禾公園・大草皮集合 <span class="pill">常駐團</span></b><span class="walk-when">今天 17:30</span></div>' +
+          '<div class="walk-meta">已有 6 隻狗報名，滑到就是緣分 🐾</div>' +
+          '<div class="walk-foot"><span class="count">來自「揪團」</span><button class="btn-green btn-sm" onclick="switchTab(\'walk\')">看揪團</button></div></div>';
+  html += postHtml(SEED_POSTS[1]);
+  html += contestHtml();
+  html += postHtml(SEED_POSTS[2]);
+  $('feed').innerHTML = html;
+}
+
+// ---------- 配對交友（找玩伴） ----------
+const MATCH_DOGS = [
+  {emoji:'🐕', name:'麻糬', sub:'柯基・2 歲・男生・距離 0.8km', match:false},
+  {emoji:'🐶', name:'蛋捲', sub:'柯基・3 歲・女生・距離 1.2km', match:true},
+  {emoji:'🐩', name:'拿鐵', sub:'貴賓・4 歲・女生・距離 1.5km', match:false},
+  {emoji:'🦮', name:'OREO', sub:'柴犬・1 歲・男生・距離 2.0km', match:false},
+  {emoji:'🐕‍🦺', name:'米魯', sub:'黃金獵犬・2 歲・男生・距離 2.8km', match:true}
+];
+let mi = 0;
+function mcardHtml(d, cls){
+  return '<div class="mcard '+cls+'"><div class="mphoto">'+d.emoji+'</div>' +
+    '<div class="minfo"><b>'+d.name+'</b><div class="sub">'+d.sub+'</div></div></div>';
+}
+function renderDeck(){
+  const stack = $('mstack'), empty = $('mempty'), btns = $('mbtns');
+  if(mi >= MATCH_DOGS.length){
+    stack.hidden = true; btns.hidden = true; empty.hidden = false;
+    return;
+  }
+  stack.hidden = false; btns.hidden = false; empty.hidden = true;
+  let html = '';
+  if(mi + 1 < MATCH_DOGS.length) html += mcardHtml(MATCH_DOGS[mi+1], 'back');
+  html += mcardHtml(MATCH_DOGS[mi], 'front');
+  stack.innerHTML = html;
+  attachDrag(stack.querySelector('.front'));
+}
+function swipeCard(dir){
+  const card = document.querySelector('#mstack .front');
+  if(!card) return;
+  const dog = MATCH_DOGS[mi];
+  card.style.transition = 'transform .3s ease, opacity .3s ease';
+  card.style.transform = 'translateX(' + (dir*480) + 'px) rotate(' + (dir*18) + 'deg)';
+  card.style.opacity = '0';
+  setTimeout(()=>{
+    mi++;
+    renderDeck();
+    if(dir === 1){
+      if(dog.match){
+        $('mpop-me').textContent = (firstPet() && firstPet().name) || '你的寶貝';
+        $('mpop-name').textContent = dog.name;
+        $('mpop').classList.add('show');
+      }else{
+        toast('💚 已送出喜歡，等 ' + dog.name + ' 回應');
+      }
+    }
+  }, 280);
+}
+function attachDrag(card){
+  if(!card) return;
+  let sx = 0, dx = 0, dragging = false;
+  card.addEventListener('pointerdown', e=>{
+    dragging = true; sx = e.clientX; card.setPointerCapture(e.pointerId);
+    card.style.transition = 'none';
+  });
+  card.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    dx = e.clientX - sx;
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx/18) + 'deg)';
+  });
+  card.addEventListener('pointerup', ()=>{
+    dragging = false;
+    if(Math.abs(dx) > 90){ swipeCard(dx > 0 ? 1 : -1); }
+    else{
+      card.style.transition = 'transform .2s ease';
+      card.style.transform = '';
+    }
+    dx = 0;
+  });
+}
+function resetMatch(){ mi = 0; renderDeck(); }
+function closePop(){ $('mpop').classList.remove('show'); }
+function matchToWalk(){
+  closePop();
+  switchTab('walk');
+  toast('🐾 已幫你們發起揪團邀請（示意）');
+}
+
+// ---------- 每週主題賽（狗貓不分組） ----------
+const CONTEST = {
+  theme:'#最奇葩睡姿', next:'#最圓的背影',
+  entries:[{e:'😹', n:'圓圓', t:'貓'}, {e:'🐶', n:'麻糬', t:'狗'}, {e:'🙀', n:'嚕嚕', t:'貓'}],
+  base:[128, 96, 87]
+};
+function contestHtml(){
+  const tiles = CONTEST.entries.map((en,i)=>{
+    const v = CONTEST.base[i] + (contestVote===i ? 1 : 0);
+    return '<button class="cat-entry'+(contestVote===i?' voted':'')+'" onclick="voteContest('+i+')">' +
+      '<span class="ce">'+en.e+'</span><b>'+en.n+'</b><span class="v">'+v+' 票</span></button>';
+  }).join('');
+  return '<div class="card"><div class="walk-top"><b>🏆 本週主題賽 '+CONTEST.theme+'</b><span class="walk-when">週日開獎</span></div>' +
+    '<div class="walk-meta">狗貓不分組，睡得越歪越有機會 😴 你家寶貝也能參賽</div>' +
+    '<div class="contest">'+tiles+'</div>' +
+    '<p class="hint" style="margin:8px 0 0">每週一換新主題（下週：'+CONTEST.next+'）・冠軍獎品由商城廠商贊助 🦴</p></div>';
+}
+function voteContest(i){
+  if(contestVote !== -1){ toast('本週已投過票囉，週日開獎 🏆'); return; }
+  contestVote = i;
+  save('jhg_contest', contestVote);
+  renderFeed();
+  toast('🏆 已投給「'+CONTEST.entries[i].n+'」！週日開獎');
+}
+
+// ---------- 發文 ----------
+let composePhoto = null;
+function openCompose(){
+  composePhoto = null;
+  $('compose-preview').innerHTML = '點我選照片';
+  $('compose-caption').value = '';
+  // 多隻寶貝時可以選這張照片是誰的
+  const sel = $('compose-pet');
+  sel.innerHTML = pets.map((p,i)=>'<option value="'+i+'">'+petEmoji(p.type)+' '+esc(p.name)+'</option>').join('');
+  $('compose-pet-row').hidden = pets.length <= 1;
+  $('ov-compose').classList.add('show');
+}
+function closeOv(id){ $(id).classList.remove('show'); }
+function pickComposePhoto(input){
+  const f = input.files && input.files[0];
+  if(!f) return;
+  compress(f, url=>{
+    composePhoto = url;
+    $('compose-preview').innerHTML = '<img alt="預覽" src="'+url+'">';
+  });
+  input.value = '';
+}
+function publishPost(){
+  if(!composePhoto){ toast('先選一張毛孩照片 📷'); return; }
+  const cap = $('compose-caption').value.trim() || '今天也是快樂的一天 🐾';
+  const pet = pets[parseInt($('compose-pet').value, 10)] || firstPet();
+  const petName = pet ? pet.name : '我的毛孩';
+  posts.push({
+    id:'u'+Date.now(), name:petName, sub:'你・📍 藝文特區',
+    photo:composePhoto, avatar:(pet && pet.photo) || null,
+    emoji:pet ? petEmoji(pet.type) : '🐶',
+    caption:'<b>'+esc(petName)+'</b> '+esc(cap), time:'剛剛', n:0, on:false
+  });
+  save('jhg_posts', posts);
+  closeOv('ov-compose');
+  renderFeed();
+  switchTab('home');
+  toast('📸 已發布！');
+}
+
+// ---------- 揪團 ----------
+const PARK_ORDER = ['風禾公園','玉山公園','虎頭山公園'];
+const SEED_WALKS = [
+  {id:'w1', park:'風禾公園', host:'小白媽', title:'大草皮集合', pill:'每週二・四 常駐團', when:'今天 17:30', meta:'適合中小型犬 ｜ 走 40 分鐘', base:6},
+  {id:'w4', park:'風禾公園', host:'蛋捲媽', title:'柯基小短腿團', pill:'', when:'明天 18:00', meta:'限短腿犬 ｜ 慢慢走 30 分鐘', base:3},
+  {id:'w2', park:'玉山公園', host:'柴柴爸', title:'夜間散步團', pill:'', when:'今天 19:00', meta:'全犬型歡迎 ｜ 慢慢走 60 分鐘', base:4},
+  {id:'w3', park:'虎頭山公園', host:'黑糖麻麻', title:'週六晨走團', pill:'', when:'週六 07:00', meta:'大型犬友善 ｜ 快走 90 分鐘', base:9}
+];
+function walkHtml(w, mine){
+  const isJoined = !!joined[w.id];
+  const n = w.base + (isJoined ? 1 : 0);
+  const hostName = mine ? ((firstPet() && firstPet().name) || '我') + '的家' : w.host;
+  const hostKey = mine ? '__me__' : w.host;
+  const hostLink = '主揪：<button class="host-link" onclick="openProfile(\''+hostKey+'\')">'+hostName+'</button> ｜ ';
+  const metaClean = w.meta.replace(/^主揪：[^｜]+｜\s*/, '');
+  return '<div class="card"><div class="walk-top"><b>'+w.title+(w.pill?' <span class="pill">'+w.pill+'</span>':'')+'</b><span class="walk-when">'+w.when+'</span></div>' +
+    '<div class="walk-meta">'+hostLink+metaClean+'</div>' +
+    '<div class="walk-foot"><span class="count">'+n+' 隻已報名</span>' +
+    (mine ? '<span class="pill">你是主揪</span>'
+          : '<button class="'+(isJoined?'joined':'btn-green')+' btn-sm" onclick="toggleJoin(\''+w.id+'\')">'+(isJoined?'✓ 已報名':'＋帶狗加入')+'</button>') +
+    '</div></div>';
+}
+function renderWalks(){
+  // 依公園分組（自己開的團排在該公園最前）
+  let html = '';
+  PARK_ORDER.forEach(park=>{
+    const mine = userWalks.filter(w=>(w.park||'風禾公園')===park).reverse();
+    const seed = SEED_WALKS.filter(w=>w.park===park);
+    const all = mine.length + seed.length;
+    const dogs = mine.concat(seed).reduce((s,w)=>s + w.base + (joined[w.id]?1:0), 0);
+    // 更新地圖上的數字
+    const cnt = document.getElementById('wcnt-'+park);
+    if(cnt) cnt.textContent = all;
+    html += '<div class="grp-head" id="grp-'+park+'"><b>🌳 '+park+'</b><span>'+all+' 團・'+dogs+' 隻狗報名</span></div>';
+    if(all === 0){
+      html += '<div class="card" style="text-align:center;color:var(--ink-soft);font-size:13px">這裡還沒有揪團，當第一個主揪吧 🐾</div>';
+    }else{
+      mine.forEach(w=>{ html += walkHtml(w, true); });
+      seed.forEach(w=>{ html += walkHtml(w, false); });
+    }
+  });
+  $('walk-groups').innerHTML = html;
+}
+function gotoPark(park){
+  const el = document.getElementById('grp-'+park);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function toggleJoin(id){
+  joined[id] = !joined[id];
+  save('jhg_joined', joined);
+  renderWalks();
+  toast(joined[id] ? '🐕 報名成功！時間到記得帶狗狗來' : '已取消報名');
+}
+function openWalkForm(){ $('ov-walk').classList.add('show'); }
+function createWalk(){
+  const title = $('wf-title').value.trim();
+  const when = $('wf-time').value.trim();
+  if(!title || !when){ toast('標題和時間要填喔'); return; }
+  userWalks.push({id:'uw'+Date.now(), park:$('wf-park').value, title:esc(title), pill:'', when:esc(when), meta:'剛發起', base:1});
+  save('jhg_userwalks', userWalks);
+  $('wf-title').value = ''; $('wf-time').value = '';
+  closeOv('ov-walk');
+  renderWalks();
+  switchTab('walk');
+  toast('🐾 揪團已發起！');
+}
+
+// ---------- 公園 ----------
+const PARKS = [
+  {id:'pk1', name:'風禾公園', now:'現在 8 隻狗 🔥', desc:'大草皮、腹地開闊，傍晚最熱鬧', bars:[2,3,4,5,9,7], tags:['大草皮','有樹蔭','夜間照明']},
+  {id:'pk2', name:'玉山公園', now:'現在 3 隻狗', desc:'藝文特區旁的社區公園，晚上散步氣氛好', bars:[1,2,3,4,6,8], tags:['近藝文特區','夜間照明']},
+  {id:'pk3', name:'虎頭山公園', now:'現在 5 隻狗', desc:'超大腹地＋步道，適合大型犬放電', bars:[6,8,4,3,7,4], tags:['超大腹地','大型犬友善','停車方便']}
+];
+function renderParks(){
+  let html = '';
+  PARKS.forEach(pk=>{
+    const max = Math.max(...pk.bars);
+    const bars = pk.bars.map(v=>'<i style="height:'+Math.round(v/max*100)+'%"'+(v===max?' class="hot"':'')+'></i>').join('');
+    const tags = pk.tags.map(t=>'<span class="tag g">'+t+'</span>').join('');
+    const isSub = !!subs[pk.id];
+    html += '<div class="card"><div class="walk-top"><b>'+pk.name+'</b><span class="walk-when">'+pk.now+'</span></div>' +
+      '<div class="walk-meta">'+pk.desc+'</div>' +
+      '<div class="busy">'+bars+'</div>' +
+      '<div class="busy-l"><span>6時</span><span>9時</span><span>12時</span><span>15時</span><span>18時</span><span>21時</span></div>' +
+      '<div class="tagrow">'+tags+'</div>' +
+      '<button class="'+(isSub?'joined':'btn-ghost')+' btn-sm" style="width:100%;margin-top:12px" onclick="toggleSub(\''+pk.id+'\')">'+(isSub?'✓ 已訂閱狗況通知':'🔔 訂閱狗況通知')+'</button></div>';
+  });
+  $('park-list').innerHTML = html;
+}
+function toggleSub(id){
+  subs[id] = !subs[id];
+  save('jhg_subs', subs);
+  renderParks();
+  toast(subs[id] ? '🔔 有狗聚集時通知你（正式版推播）' : '已取消訂閱');
+}
+
+// ---------- 我的寶貝 ----------
+function renderPets(){
+  let html = '';
+  pets.forEach(p=>{
+    html += '<div class="card dogcard"><div class="dog-photo">' +
+      (p.photo ? '<img alt="" src="'+p.photo+'">' : petEmoji(p.type)) + '</div>' +
+      '<div style="flex:1"><b>'+esc(p.name)+' <span class="pill">'+petEmoji(p.type)+' '+p.type+'</span></b>' +
+      '<div class="sub">'+esc(p.breed || '—')+'</div></div>' +
+      '<button class="btn-ghost btn-sm" onclick="openPetForm(\''+p.id+'\')">編輯</button></div>';
+  });
+  if(!pets.length){
+    html = '<div class="card" style="text-align:center;color:var(--ink-soft);font-size:13px">還沒有寶貝檔案，新增第一隻吧 🐾</div>';
+  }
+  $('pet-list').innerHTML = html;
+  $('st-posts').textContent = posts.length;
+  $('st-walks').textContent = Object.values(joined).filter(Boolean).length + userWalks.length;
+  $('st-likes').textContent = posts.reduce((s,p)=>s+p.n, 0);
+}
+
+// ---------- 寶貝檔案表單（初次／新增／編輯共用） ----------
+let obPhoto = null, editingPetId = null;
+function openPetForm(id){
+  editingPetId = id;
+  const p = id ? pets.find(x=>x.id===id) : null;
+  $('ob-title').textContent = p ? '編輯寶貝檔案 ✏️'
+    : (pets.length ? '新增一隻寶貝 🐾' : '歡迎來到揪好GO！先介紹你的寶貝 🐾');
+  $('ob-name').value = p ? p.name : '';
+  $('ob-type').value = p ? p.type : '狗';
+  $('ob-breed').value = p ? (p.breed || '') : '';
+  obPhoto = p ? p.photo : null;
+  $('ob-preview').innerHTML = obPhoto ? '<img alt="預覽" src="'+obPhoto+'">' : '📷 點我放寶貝照片（可跳過）';
+  $('ob-cancel').hidden = pets.length === 0;
+  $('ov-onboard').classList.add('show');
+}
+function pickObPhoto(input){
+  const f = input.files && input.files[0];
+  if(!f) return;
+  compress(f, url=>{
+    obPhoto = url;
+    $('ob-preview').innerHTML = '<img alt="預覽" src="'+url+'">';
+  });
+  input.value = '';
+}
+function savePet(){
+  const name = $('ob-name').value.trim();
+  if(!name){ toast('寶貝的名字要填喔 🐾'); return; }
+  const data = {name:name, type:$('ob-type').value, breed:$('ob-breed').value.trim(), photo:obPhoto};
+  if(editingPetId){
+    Object.assign(pets.find(x=>x.id===editingPetId), data);
+  }else{
+    pets.push(Object.assign({id:'pet'+Date.now()}, data));
+  }
+  save('jhg_pets', pets);
+  closeOv('ov-onboard');
+  renderPets();
+  toast(editingPetId ? '已更新 ✏️' : '歡迎 ' + name + '！🐾');
+  editingPetId = null;
+}
+function resetAll(){
+  if(!confirm('確定要清除這支手機上的試用資料嗎？')) return;
+  ['jhg_profile','jhg_pets','jhg_posts','jhg_seedlikes','jhg_userwalks','jhg_joined','jhg_subs','jhg_contest'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
+// ---------- 即時天氣（桃園藝文特區，Open-Meteo 免費 API） ----------
+function wxEmoji(code){
+  if(code === 0) return '☀️';
+  if(code <= 2) return '🌤';
+  if(code === 3) return '☁️';
+  if(code <= 48) return '🌫';
+  if(code <= 67) return '🌧';
+  if(code <= 82) return '🌦';
+  return '⛈';
+}
+function wxVerdict(temp, rain){
+  if(rain >= 60) return '☔ 降雨機率高，建議改期或帶雨衣';
+  if(temp >= 33) return '🥵 高溫注意狗狗中暑，建議清晨或傍晚再出門';
+  if(temp <= 12) return '🧥 偏冷，短毛狗記得加件衣服';
+  if(rain >= 30) return '🌂 可能飄雨，出門帶把傘保險';
+  return '✅ 現在超適合遛狗！';
+}
+function fetchWeather(){
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=24.9937&longitude=121.2955' +
+    '&current=temperature_2m,weather_code&hourly=precipitation_probability&forecast_days=1&timezone=Asia%2FTaipei';
+  fetch(url).then(r=>r.json()).then(d=>{
+    const temp = Math.round(d.current.temperature_2m);
+    const nowIso = d.current.time.slice(0,13); // yyyy-mm-ddThh
+    let idx = d.hourly.time.findIndex(t=>t.slice(0,13) === nowIso);
+    if(idx < 0) idx = 0;
+    const rain = d.hourly.precipitation_probability[idx];
+    $('wx-temp').textContent = temp;
+    $('wx-rain').textContent = rain;
+    $('wx-icon').textContent = wxEmoji(d.current.weather_code);
+    $('wx-verdict').textContent = wxVerdict(temp, rain);
+  }).catch(()=>{
+    $('wx-temp').textContent = '28';
+    $('wx-rain').textContent = '10';
+    $('wx-verdict').textContent = '（離線示意值）✅ 適合遛狗';
+  });
+}
+
+// ---------- 啟動 ----------
+fetchWeather();
+renderFeed();
+renderWalks();
+renderParks();
+renderPets();
+renderDeck();
+if(pets.length === 0) openPetForm(null);
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>

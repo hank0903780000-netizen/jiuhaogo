@@ -1,0 +1,1244 @@
+<meta charset="utf-8">
+<title>揪好GO — 遛狗揪團 App 原型</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --bg:#FAFAFA;
+  --card:#FFFFFF;
+  --ink:#1C1C1E;
+  --ink-soft:#737373;
+  --line:#DBDBDB;
+  --green:#3E8E5A;
+  --green-deep:#2C6B43;
+  --green-soft:#EAF4EE;
+  --amber:#E8A13D;
+  --amber-soft:#FDF3E3;
+  --sky:#5B8DB8;
+  --sky-soft:#EBF2F8;
+  --danger:#C75B4A;
+  --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+/* 固定使用白色主題（使用者指定不要黑底），深色模式下也維持白底 */
+:root[data-theme="light"], :root[data-theme="dark"]{
+  --bg:#FAFAFA; --card:#FFFFFF; --ink:#1C1C1E; --ink-soft:#737373; --line:#DBDBDB;
+  --green:#3E8E5A; --green-deep:#2C6B43; --green-soft:#EAF4EE;
+  --amber:#E8A13D; --amber-soft:#FDF3E3; --sky:#5B8DB8; --sky-soft:#EBF2F8;
+  --danger:#C75B4A; --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  line-height:1.6;
+}
+.stage{
+  max-width:1080px; margin:0 auto; padding:32px 20px 64px;
+  display:flex; gap:48px; align-items:flex-start; justify-content:center; flex-wrap:wrap;
+}
+/* ---------- pitch panel ---------- */
+.pitch{flex:1 1 340px; max-width:420px; order:1}
+.pitch .logo{
+  display:flex; align-items:center; gap:12px; margin-bottom:8px;
+}
+.logo-mark{
+  width:52px; height:52px; border-radius:16px; background:var(--green);
+  display:flex; align-items:center; justify-content:center; font-size:28px;
+  box-shadow:var(--shadow);
+}
+.pitch h1{font-size:32px; margin:0; letter-spacing:.04em}
+.pitch h1 em{font-style:normal; color:var(--green)}
+.pitch .tagline{color:var(--ink-soft); margin:4px 0 24px; font-size:15px}
+.pitch h2{
+  font-size:13px; letter-spacing:.18em; color:var(--green);
+  margin:28px 0 10px; text-transform:uppercase;
+}
+.feat{display:flex; flex-direction:column; gap:10px}
+.feat-row{
+  display:flex; gap:12px; align-items:flex-start;
+  background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px;
+}
+.feat-row .ico{font-size:22px; line-height:1.3}
+.feat-row b{display:block; font-size:15px}
+.feat-row span{font-size:13px; color:var(--ink-soft)}
+.biz{font-size:14px; color:var(--ink-soft); margin:0; padding-left:0; list-style:none}
+.biz li{padding:6px 0; border-bottom:1px dashed var(--line)}
+.biz li:last-child{border-bottom:none}
+.biz b{color:var(--ink)}
+.note{
+  margin-top:24px; font-size:13px; color:var(--ink-soft);
+  background:var(--amber-soft); border-radius:12px; padding:12px 14px;
+}
+.cmp-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--card)}
+.cmp{width:100%; border-collapse:collapse; font-size:12px; min-width:360px}
+.cmp th,.cmp td{padding:8px 10px; text-align:center; border-bottom:1px solid var(--line); line-height:1.45}
+.cmp tr:last-child th,.cmp tr:last-child td{border-bottom:none}
+.cmp thead th{font-size:11.5px; color:var(--ink-soft); background:var(--green-soft)}
+.cmp thead th:nth-child(2){color:var(--green-deep); font-size:12.5px}
+.cmp tbody th{text-align:left; font-weight:700; white-space:nowrap}
+.cmp .y{color:var(--green); font-weight:700}
+.cmp .n{color:var(--ink-soft)}
+.quote{
+  margin:14px 0 0; padding:12px 14px; border-left:4px solid var(--green);
+  background:var(--green-soft); border-radius:0 12px 12px 0;
+  font-size:13.5px; font-weight:700; line-height:1.7;
+}
+/* stickiness demo */
+.noti{
+  display:flex; gap:10px; align-items:flex-start;
+  background:var(--card); border:1px solid var(--line); border-left:4px solid var(--amber);
+  border-radius:12px; padding:10px 12px; margin:10px 0 2px; font-size:12.5px; line-height:1.5;
+}
+.noti .ni{font-size:18px; line-height:1.3}
+.noti b{display:block}
+.noti span{color:var(--ink-soft); font-size:12px}
+.pill{
+  font-size:10.5px; background:var(--amber-soft); color:var(--amber);
+  font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap;
+}
+.stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:4px}
+.stat{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:10px 6px; text-align:center;
+}
+.stat b{font-size:19px; color:var(--green); font-variant-numeric:tabular-nums; display:block}
+.stat span{font-size:10.5px; color:var(--ink-soft)}
+.badges{display:flex; gap:8px}
+.badge-card{
+  flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:10px 6px; text-align:center; font-size:10.5px; color:var(--ink-soft); line-height:1.4;
+}
+.badge-card .bi{font-size:23px; display:block; margin-bottom:2px}
+.badge-card.locked{opacity:.45}
+.friends{display:flex; gap:12px; overflow-x:auto; padding:4px 2px}
+.friend{text-align:center; font-size:11px; color:var(--ink-soft); flex:0 0 auto}
+.friend .fa{
+  width:44px; height:44px; border-radius:50%; background:var(--green-soft);
+  display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 2px;
+}
+.report .photos{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:10px 0}
+.report .photos div{
+  aspect-ratio:1; border-radius:10px; background:var(--green-soft);
+  display:flex; align-items:center; justify-content:center; font-size:20px;
+}
+.tag-add{
+  font-size:11.5px; padding:3px 10px; border-radius:999px; font-weight:700;
+  background:var(--amber-soft); color:var(--amber); border:1px dashed var(--amber);
+}
+.tag-add.done{background:var(--green-soft); color:var(--green-deep); border-style:solid; border-color:var(--green)}
+/* match / swipe */
+.match-stack{position:relative; height:380px; margin-top:12px}
+.mcard{
+  position:absolute; inset:0; background:var(--card); border:1px solid var(--line);
+  border-radius:20px; overflow:hidden; display:flex; flex-direction:column;
+  box-shadow:var(--shadow); touch-action:none; user-select:none;
+}
+.mcard.back{transform:scale(.95) translateY(10px); z-index:1}
+.mcard.front{z-index:2; cursor:grab}
+.mcard .mphoto{flex:1; background:var(--green-soft); display:flex; align-items:center; justify-content:center; font-size:88px}
+.mcard .minfo{padding:12px 16px 14px}
+.mcard .minfo b{font-size:17px}
+.mcard .minfo .sub{font-size:12.5px; color:var(--ink-soft)}
+.mbtns{display:flex; justify-content:center; gap:28px; margin-top:16px}
+.mbtn{
+  width:56px; height:56px; border-radius:50%; font-size:23px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow);
+}
+.mbtn.like{background:var(--green); color:#fff; border:none}
+.mbtn.nope{color:var(--danger)}
+.match-empty{
+  height:380px; margin-top:12px; border:2px dashed var(--line); border-radius:20px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; color:var(--ink-soft); font-size:13.5px; text-align:center; padding:20px;
+}
+.match-empty .big{font-size:44px}
+.match-pop{
+  position:absolute; inset:0; z-index:6; background:rgba(35,48,31,.55);
+  display:none; align-items:center; justify-content:center; border-radius:inherit;
+}
+.match-pop.show{display:flex}
+.match-pop .box{
+  background:var(--card); border-radius:22px; padding:26px 22px; text-align:center;
+  width:78%; box-shadow:var(--shadow);
+}
+.match-pop .big{font-size:40px}
+.match-pop b{font-size:19px; display:block; margin:6px 0 2px}
+.match-pop p{font-size:13px; color:var(--ink-soft); margin:0 0 14px}
+.match-pop .btns{display:flex; flex-direction:column; gap:8px}
+/* ---------- phone ---------- */
+.phone{
+  order:2; flex:0 0 auto; width:392px; max-width:100%;
+  border-radius:44px; background:var(--card);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  overflow:hidden; position:sticky; top:24px;
+}
+.phone-head{
+  padding:18px 20px 12px; display:flex; align-items:center; justify-content:space-between;
+  background:linear-gradient(180deg, var(--green-soft), transparent);
+}
+.phone-head .app{font-weight:700; font-size:19px; letter-spacing:.02em}
+.phone-head .app em{font-style:normal; color:var(--green)}
+.phone-head .loc{
+  font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:4px;
+}
+.screen{
+  height:600px; overflow-y:auto; padding:4px 16px 20px;
+  scrollbar-width:thin;
+}
+.page{display:none}
+.page.active{display:block}
+.section-t{
+  font-size:13px; letter-spacing:.14em; color:var(--ink-soft);
+  margin:18px 4px 8px; font-weight:700;
+}
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:14px; margin-bottom:10px;
+}
+/* home / walks */
+.hero-card{
+  background:var(--green); color:#fff; border:none; border-radius:20px;
+  padding:16px; margin:8px 0 4px;
+}
+.hero-card b{font-size:17px}
+.hero-card p{margin:4px 0 10px; font-size:13px; opacity:.9}
+.walk{display:flex; flex-direction:column; gap:8px}
+.walk-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.walk-top b{font-size:15px}
+.walk-when{font-size:12px; color:var(--green); font-weight:700; white-space:nowrap}
+.walk-meta{font-size:12.5px; color:var(--ink-soft)}
+.walk-foot{display:flex; justify-content:space-between; align-items:center}
+.dogs{display:flex}
+.dog-ava{
+  width:30px; height:30px; border-radius:50%; background:var(--green-soft);
+  border:2px solid var(--card); display:flex; align-items:center; justify-content:center;
+  font-size:15px; margin-left:-8px;
+}
+.dog-ava:first-child{margin-left:0}
+.count{font-size:12px; color:var(--ink-soft); margin-left:8px}
+button{
+  font-family:inherit; font-size:14px; border:none; cursor:pointer;
+  border-radius:999px; padding:8px 18px; font-weight:700;
+  transition:transform .12s ease, opacity .12s ease;
+}
+button:active{transform:scale(.96)}
+button:focus-visible{outline:3px solid var(--sky); outline-offset:2px}
+.btn-green{background:var(--green); color:#fff}
+.btn-ghost{background:var(--green-soft); color:var(--green-deep)}
+.btn-amber{background:var(--amber); color:#3A2A0D}
+.btn-sm{padding:6px 14px; font-size:13px}
+.joined{background:var(--line); color:var(--ink-soft)}
+/* map */
+.mapbox{
+  position:relative; border-radius:18px; overflow:hidden; margin-top:8px;
+  border:1px solid var(--line);
+}
+.mapbox svg{display:block; width:100%; height:auto}
+.pin{cursor:pointer}
+.pin circle.halo{opacity:0; transition:opacity .15s}
+.pin.sel circle.halo{opacity:.35}
+.seg{
+  display:flex; background:var(--green-soft); border-radius:999px; padding:4px; margin-top:14px;
+}
+.seg button{flex:1; background:transparent; color:var(--ink-soft); padding:7px 0; font-size:13.5px}
+.seg button.on{background:var(--card); color:var(--ink); box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.busy{display:flex; align-items:flex-end; gap:5px; height:44px; margin-top:8px}
+.busy i{
+  flex:1; background:var(--green-soft); border-radius:4px 4px 0 0; display:block;
+}
+.busy i.hot{background:var(--green)}
+.busy-l{display:flex; gap:5px; font-size:10px; color:var(--ink-soft)}
+.busy-l span{flex:1; text-align:center}
+.tagrow{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.tag{
+  font-size:11.5px; background:var(--sky-soft); color:var(--sky);
+  padding:3px 10px; border-radius:999px; font-weight:700;
+}
+.tag.g{background:var(--green-soft); color:var(--green-deep)}
+.tag.a{background:var(--amber-soft); color:var(--amber)}
+.rest{display:flex; gap:12px; align-items:center}
+.rest .ico{
+  width:46px; height:46px; border-radius:12px; background:var(--amber-soft);
+  display:flex; align-items:center; justify-content:center; font-size:22px; flex:0 0 auto;
+}
+.rest b{font-size:14.5px}
+.rest .sub{font-size:12px; color:var(--ink-soft)}
+.stars{color:var(--amber); font-size:12px; letter-spacing:.05em}
+/* dog profile */
+.dogcard{display:flex; gap:14px; align-items:center}
+.dog-photo{
+  width:76px; height:76px; border-radius:50%; background:var(--green-soft);
+  display:flex; align-items:center; justify-content:center; font-size:38px;
+  overflow:hidden; flex:0 0 auto; border:3px solid var(--green);
+}
+.dog-photo img{width:100%; height:100%; object-fit:cover}
+.dogcard b{font-size:17px}
+.dogcard .sub{font-size:12.5px; color:var(--ink-soft)}
+.upload{
+  border:2px dashed var(--line); border-radius:16px; padding:20px;
+  text-align:center; color:var(--ink-soft); font-size:13.5px; cursor:pointer;
+  background:var(--card); margin-bottom:10px; transition:border-color .15s;
+}
+.upload:hover{border-color:var(--green)}
+.gallery{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.gallery .ph{
+  aspect-ratio:1; border-radius:12px; background:var(--green-soft);
+  display:flex; align-items:center; justify-content:center; font-size:30px; overflow:hidden;
+}
+.gallery .ph img{width:100%; height:100%; object-fit:cover}
+/* gig */
+.gig-top{display:flex; justify-content:space-between; align-items:baseline}
+.gig-top b{font-size:15px}
+.price{color:var(--green); font-weight:800; font-size:16px; font-variant-numeric:tabular-nums}
+.gig .sub{font-size:12.5px; color:var(--ink-soft); margin:2px 0 10px}
+.gig-foot{display:flex; justify-content:space-between; align-items:center}
+.badge{
+  font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px;
+}
+.badge.walk{background:var(--green-soft); color:var(--green-deep)}
+.badge.feed{background:var(--amber-soft); color:var(--amber)}
+.badge.sleep{background:var(--sky-soft); color:var(--sky)}
+/* cat contest */
+.contest{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+button.cat-entry{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:10px 6px; text-align:center; font-size:11px; color:var(--ink-soft);
+  font-weight:400; line-height:1.5;
+}
+.cat-entry .ce{font-size:33px; display:block}
+.cat-entry b{display:block; color:var(--ink); font-size:12.5px}
+.cat-entry .v{font-variant-numeric:tabular-nums}
+.cat-entry.voted{border-color:var(--green); background:var(--green-soft)}
+.cat-entry.voted .v{color:var(--green-deep); font-weight:700}
+/* IG-style feed */
+.stories{display:flex; gap:12px; overflow-x:auto; padding:10px 2px 8px; scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+button.story{
+  flex:0 0 auto; text-align:center; font-size:10.5px; color:var(--ink-soft);
+  background:none; border:none; padding:0; font-weight:600; border-radius:0;
+}
+.story .sr{
+  width:60px; height:60px; border-radius:50%; padding:3px; margin-bottom:3px;
+  background:conic-gradient(var(--amber), var(--green), var(--sky), var(--amber));
+  display:flex;
+}
+.story .si{
+  flex:1; border-radius:50%; background:var(--green-soft); border:2.5px solid var(--card);
+  display:flex; align-items:center; justify-content:center; font-size:27px;
+}
+.story.add .sr{background:var(--line)}
+.story.add .si{color:var(--green); font-size:24px; font-weight:700}
+.post{padding:0; overflow:hidden}
+.post-head{display:flex; gap:10px; align-items:center; padding:10px 12px}
+.post-head .pa{
+  width:36px; height:36px; border-radius:50%; background:var(--green-soft); flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+}
+.post-head b{font-size:13.5px; display:block; line-height:1.3}
+.post-head .sub{font-size:11px; color:var(--ink-soft)}
+.post-photo{
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  font-size:110px; position:relative; cursor:pointer; user-select:none;
+  background:linear-gradient(135deg, var(--green-soft), var(--sky-soft));
+}
+.post-photo.warm{background:linear-gradient(135deg, var(--amber-soft), var(--green-soft))}
+.post-photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+.bigheart{
+  position:absolute; font-size:76px; pointer-events:none; z-index:2;
+  animation:heartpop .7s ease forwards;
+}
+@keyframes heartpop{
+  0%{transform:scale(0); opacity:.95}
+  55%{transform:scale(1.2); opacity:1}
+  100%{transform:scale(1); opacity:0}
+}
+.post-body{padding:9px 12px 13px; font-size:13px}
+.post-body p{margin:4px 0 2px; line-height:1.55}
+.post-actions{display:flex; gap:14px; margin-bottom:4px}
+button.pact{background:none; padding:2px; font-size:22px; border-radius:8px; line-height:1}
+.plikes{font-size:13px}
+.ptime{font-size:11px; color:var(--ink-soft)}
+/* shop */
+.shop-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px}
+.prod{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:12px; display:flex; flex-direction:column; gap:6px;
+}
+.prod .pic{
+  aspect-ratio:1.4; border-radius:12px; background:var(--amber-soft);
+  display:flex; align-items:center; justify-content:center; font-size:34px;
+}
+.prod b{font-size:13.5px; line-height:1.4}
+.prod .maker{font-size:11px; color:var(--ink-soft)}
+.prod .row{display:flex; justify-content:space-between; align-items:center; margin-top:auto}
+.vendor-cta{
+  background:var(--sky-soft); border:1px dashed var(--sky); border-radius:16px;
+  padding:14px; font-size:13px; color:var(--ink); margin-top:4px;
+}
+.vendor-cta b{color:var(--sky)}
+/* tabbar */
+.tabbar{
+  display:flex; border-top:1px solid var(--line); background:var(--card);
+  padding:8px 6px calc(10px + env(safe-area-inset-bottom));
+}
+.tab{
+  flex:1; background:none; border-radius:12px; padding:6px 2px;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  font-size:10.5px; color:var(--ink-soft); font-weight:600;
+}
+.tab .ti{font-size:21px; line-height:1.2}
+.tab.on{color:var(--green)}
+.tab.on .ti{transform:translateY(-1px)}
+/* toast */
+.toast{
+  position:fixed; left:50%; bottom:36px; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:var(--bg); padding:10px 22px; border-radius:999px;
+  font-size:14px; font-weight:700; opacity:0; pointer-events:none;
+  transition:opacity .25s, transform .25s; z-index:50; white-space:nowrap;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+input,select,textarea{
+  font-family:inherit; font-size:14px; width:100%;
+  border:1px solid var(--line); border-radius:12px; padding:9px 12px;
+  background:var(--card); color:var(--ink); margin-bottom:8px;
+}
+label{font-size:12.5px; color:var(--ink-soft); font-weight:700}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important}
+}
+@media (max-width:860px){
+  .stage{flex-direction:column; align-items:center; gap:28px}
+  .phone{order:1; position:static}
+  .pitch{order:2; max-width:392px}
+}
+</style>
+
+<div class="stage">
+
+  <!-- ===== 合夥人簡報區 ===== -->
+  <aside class="pitch">
+    <div class="logo">
+      <div class="logo-mark">🐕</div>
+      <h1>揪好<em>GO</em></h1>
+    </div>
+    <p class="tagline">揪伴遛狗・在地寵物生活圈 — 概念原型（給合夥人評估用）</p>
+    <a href="/app/" style="display:block;text-align:center;background:var(--green);color:#fff;font-weight:700;padding:12px;border-radius:999px;text-decoration:none;margin-bottom:8px">📲 開啟試用版 App（可加入手機主畫面）</a>
+    <p style="font-size:12px;color:var(--ink-soft);margin:0 0 8px;text-align:center">真的能發文、開團、報名——資料存在你手機裡</p>
+
+    <h2>六大功能</h2>
+    <div class="feat">
+      <div class="feat-row"><span class="ico">📱</span><div><b>寵物動態牆（IG 式首頁）</b><span>限時動態＋照片流＋雙擊愛心，曬毛孩讓人天天想滑；揪團卡片穿插其中，滑著滑著就報名</span></div></div>
+      <div class="feat-row"><span class="ico">📅</span><div><b>揪團遛狗</b><span>約時間、選公園，附近狗友一鍵加入</span></div></div>
+      <div class="feat-row"><span class="ico">🗺️</span><div><b>公園地圖＋熱門時段</b><span>看哪個公園現在最多狗聚集</span></div></div>
+      <div class="feat-row"><span class="ico">📸</span><div><b>狗狗檔案</b><span>上傳照片、建立個性檔案，社群認識彼此</span></div></div>
+      <div class="feat-row"><span class="ico">💕</span><div><b>狗狗配對交友</b><span>左滑右滑找玩伴，同品種、同地區優先；配對成功直接約遛狗</span></div></div>
+      <div class="feat-row"><span class="ico">🤝</span><div><b>代遛／上門餵食接單</b><span>飼主發需求，有空的人接單賺外快</span></div></div>
+      <div class="feat-row"><span class="ico">🦴</span><div><b>手作零食商城</b><span>在地廠商上架自製寵物零食</span></div></div>
+      <div class="feat-row"><span class="ico">☕</span><div><b>寵物友善餐廳</b><span>狗友實際去過的友善店家推薦</span></div></div>
+    </div>
+
+    <h2>貓的策略</h2>
+    <ul class="biz">
+      <li><b>狗是社群引擎</b>：揪團、地圖、配對為狗設計（貓不外出社交）— 這是護城河</li>
+      <li><b>貓是金流引擎</b>：貓不能寄宿、只能到府照顧，上門餵貓是保姆市場最大宗 — 接單服務和商城<b>第一天就收貓</b>，不需要社群密度就有現金流</li>
+      <li><b>貓咪陪睡員（過夜加值服務）</b>：全台家貓 174 萬隻已超越狗 146 萬（兩年 +32.8%）；陪睡員旺季月入可破 10 萬（TVBS 2026/6 報導）— 過夜單價高、抽成肥，「月入十萬」也是招募接單者的最強廣告</li>
+    </ul>
+
+    <h2>貓奴的社交（貓不出門也能玩）</h2>
+    <ul class="biz">
+      <li><b>曬貓比賽</b>：每週主題投票（#奇怪睡姿大賽），貓奴曬貓慾比狗主更強；獎品用商城零食 — 引流＋黏著＋餵商城一次到位（揪團頁有投票示意）</li>
+      <li><b>貓友互餵圈</b>：同社區「你出差我幫餵、我出國你幫餵」的免費互助 → 出遠門五天自然升級成付費陪睡單 — 免費餵付費的漏斗，沒有社群層的對手學不走</li>
+      <li><b>第二階段</b>：貓用品二手交換／貓砂罐頭團購、貓行為講座、中途之家送養會合作（領養人從第一天就是用戶）</li>
+    </ul>
+
+    <h2>競爭對手比較</h2>
+    <div class="cmp-wrap">
+      <table class="cmp">
+        <thead>
+          <tr><th>　</th><th>揪好GO</th><th>PetBacker</th><th>毛小愛 Fluv</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>定位</th><td class="y">在地狗友社群<br>＋生活圈</td><td class="n">全球媒合工具<br>（50 國）</td><td class="n">本土保姆媒合<br>（台灣最大）</td></tr>
+          <tr><th>揪團遛狗社群</th><td class="y">✓ 核心功能</td><td class="n">✗</td><td class="n">✗</td></tr>
+          <tr><th>天天打開的理由</th><td class="y">✓ 公園地圖<br>＋揪團</td><td class="n">✗ 有需求才開</td><td class="n">✗ 有需求才開</td></tr>
+          <tr><th>台灣在地客服</th><td class="y">✓ LINE 真人<br>（規劃）</td><td class="n">✗ 無落地公司</td><td class="y">✓</td></tr>
+          <tr><th>身分驗證</th><td class="n">規劃中</td><td class="n">部分</td><td class="y">✓ 嚴格＋良民證</td></tr>
+          <tr><th>零食商城／友善餐廳</th><td class="y">✓</td><td class="n">✗</td><td class="n">✗</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>我們怎麼贏</h2>
+    <ul class="biz">
+      <li><b>用「見過面」打「網路評價」</b>：接單者是飼主揪團時見過的狗友，信任感是評價系統做不到的——揪團就是護城河</li>
+      <li><b>用「高頻」打「低頻」</b>：代遛一年 5 次，但遛狗每週都有；用戶天天開 App，需要時自然想到我們</li>
+      <li><b>用「一區做深」打「五十國做淺」</b>：先讓一個區「打開地圖真的看得到今晚哪個公園有狗聚」</li>
+      <li><b>用「生態系」打「單一工具」</b>：社群＋服務＋商城＋餐廳，兩個對手都只做媒合</li>
+      <li><b>對毛小愛：避開正面拼保姆媒合</b>，它驗證與客服領先，我們用社群做出差異</li>
+    </ul>
+    <p class="quote">「PetBacker 是全球性的媒合工具，我們做的是在地狗友社群——先有社群才有信任，先有信任才有交易。他們的用戶用完就走，我們的用戶天天回來。」</p>
+
+    <h2>黏著度設計（高頻的引擎）</h2>
+    <ul class="biz">
+      <li><b>IG 式動態牆</b>：曬毛孩的無限捲動照片流＋限時動態＋雙擊愛心 — 「沒事滑兩下」的習慣就是所有功能的流量入口</li>
+      <li><b>固定團＋精準通知</b>：常駐團養習慣，「你常去的公園現在有 6 隻狗」「小白的朋友報名了今晚的團」— 每天給一個打開 App 的理由</li>
+      <li><b>狗狗累積資產</b>：散步里程、徽章、狗友圖譜 — 資料累積越多越離不開，是換平台成本最高的護城河</li>
+      <li><b>散步小報告</b>：揪團結束自動生成照片卡片，主人分享到 IG／LINE — 回訪＋免費拉新一次解決（右邊手機的揪團頁、我的狗頁都做了示意）</li>
+      <li><b>打卡 tag 狗友 → 餵飽推播</b>：每次打卡標記同行的狗、順手加好友，好友圈自動長大 — 「柴柴報名了今晚的團」這種最有效的社交推播，名單就是這樣來的</li>
+    </ul>
+
+    <h2>錢從哪裡來（按可行順序）</h2>
+    <ul class="biz">
+      <li><b>1. 代遛／餵食抽成 15–20%</b>：一單 NT$250 抽約 NT$45，金流必須走平台（美國 Rover 驗證過的模式）</li>
+      <li><b>2. 商城</b>：廠商上架月費 NT$300–500 ＋ 銷售抽成 10–15%，手作零食毛利高、廠商願意讓利</li>
+      <li><b>3. 店家曝光</b>：友善餐廳付費置頂／認證標章，一家月付 NT$500–1,000</li>
+      <li><b>4. 訂閱＋保險導購</b>：最後才做；寵物險佣金一張可抵十筆遛狗抽成</li>
+    </ul>
+
+    <h2>單區試算（站穩一區之後）</h2>
+    <ul class="biz">
+      <li><b>代遛抽成</b>：每天 30 單 × NT$45 ≈ <b>月收 4 萬</b></li>
+      <li><b>零食商城</b>：20 家廠商月費＋抽成 ≈ <b>月收 1–2 萬</b></li>
+      <li><b>店家曝光</b>：30 家 × NT$600 ≈ <b>月收 2 萬</b></li>
+      <li>單區月營收約 <b>7–8 萬</b> — 重點是模式成立後，<b>複製到下一個區的成本很低</b></li>
+    </ul>
+
+    <h2>要一起面對的三個風險</h2>
+    <ul class="biz">
+      <li><b>跳單</b>：雙方熟了繞過平台 → 解法：保險保障只限平台內交易＋評價綁平台</li>
+      <li><b>密度</b>：單區狗主不夠多就撮合不起來 → 先用免費揪團養熱一區，再開收費服務</li>
+      <li><b>責任</b>：代遛時狗咬人／走失 → 收費服務上線前必須搞定保險＋接單者身分驗證</li>
+    </ul>
+
+    <h2>試點計畫：桃園藝文特區</h2>
+    <ul class="biz">
+      <li><b>為什麼從藝文特區開始</b>：高密度大樓住宅、雙薪上班族白天不在家 → 代遛／餵食是剛性需求；消費力撐得起 NT$250 一單</li>
+      <li><b>擴張篩選條件</b>：房價每坪 50–80 萬的重劃區優先 — 收入、工時、大樓養狗密度三個條件同時成立</li>
+      <li><b>下一站候選（同一條件）</b>：中路重劃區、青埔、林口、新莊副都心</li>
+      <li><b>核心問題</b>：「我們願不願意先花 6 個月不賺錢，把藝文特區的狗主社群養起來？」— 所有收入模式都建立在這個前提上</li>
+    </ul>
+
+    <p class="note">👉 右邊的手機畫面可以直接點按操作：加入揪團、點地圖上的公園、上傳狗狗照片、接單、逛商城都會有反應。全部是示意假資料。</p>
+  </aside>
+
+  <!-- ===== 手機原型 ===== -->
+  <div class="phone">
+    <div class="phone-head">
+      <div class="app">揪好<em>GO</em></div>
+      <div class="loc">📍 桃園市藝文特區</div>
+    </div>
+
+    <div class="screen" id="screen">
+
+      <!-- 首頁：揪團遛狗 -->
+      <section class="page active" id="page-home">
+        <div class="noti">
+          <span class="ni">🔔</span>
+          <div>
+            <b>風禾公園現在有 6 隻狗 🔥</b>
+            <span>小白的好朋友「柴柴」也在 — 現在出門剛剛好</span>
+          </div>
+        </div>
+        <div class="stories" id="stories-row">
+          <button class="story add" onclick="document.getElementById('post-in').click()"><span class="sr"><span class="si">＋</span></span>發布照片</button>
+          <button class="story" onclick="toast('柴柴的限時動態（示意）')"><span class="sr"><span class="si">🐕</span></span>柴柴</button>
+          <button class="story" onclick="toast('圓圓的限時動態（示意）')"><span class="sr"><span class="si">🐱</span></span>圓圓</button>
+          <button class="story" onclick="toast('布丁的限時動態（示意）')"><span class="sr"><span class="si">🐩</span></span>布丁</button>
+          <button class="story" onclick="toast('麻糬的限時動態（示意）')"><span class="sr"><span class="si">🐶</span></span>麻糬</button>
+          <button class="story" onclick="toast('OREO 的限時動態（示意）')"><span class="sr"><span class="si">🦮</span></span>OREO</button>
+        </div>
+        <input type="file" id="post-in" accept="image/*" hidden onchange="addPost(this)">
+
+        <div class="card post" id="first-post">
+          <div class="post-head">
+            <span class="pa">🐕</span>
+            <div><b>柴柴 shiba_chai</b><span class="sub">柴柴爸・📍 風禾公園</span></div>
+          </div>
+          <div class="post-photo" id="pp-p1" onclick="dblTap(event,'p1')">🐕</div>
+          <div class="post-body">
+            <div class="post-actions">
+              <button class="pact" id="pl-p1" onclick="likePost('p1')">🤍</button>
+              <button class="pact" onclick="toast('留言（示意）')">💬</button>
+              <button class="pact" onclick="toast('已分享（示意）')">✈️</button>
+            </div>
+            <b class="plikes" id="plc-p1">1,204 個讚</b>
+            <p><b>柴柴</b> 今天在風禾公園跑到瘋掉，回家秒睡 🐕💨 #藝文特區狗友 #風禾公園</p>
+            <span class="ptime">2 小時前・雙擊照片試試 ❤️</span>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <b>今天傍晚，風禾公園 🌳</b>
+          <p>已經有 6 隻狗狗報名了，天氣晴 28°C，最適合遛狗！</p>
+          <button class="btn-amber btn-sm" onclick="switchTab('map')">看公園狀況</button>
+        </div>
+
+        <div class="section-t">附近的揪團</div>
+
+        <div class="card walk">
+          <div class="walk-top"><b>風禾公園・大草皮集合 <span class="pill">每週二・四 常駐團</span></b><span class="walk-when">今天 17:30</span></div>
+          <div class="walk-meta">主揪：小白媽 ｜ 適合中小型犬 ｜ 走 40 分鐘</div>
+          <div class="walk-foot">
+            <div style="display:flex;align-items:center">
+              <div class="dogs"><span class="dog-ava">🐶</span><span class="dog-ava">🐕</span><span class="dog-ava">🐩</span></div>
+              <span class="count" id="c1">6 隻已報名</span>
+            </div>
+            <button class="btn-green btn-sm" id="j1" onclick="joinWalk(1)">＋帶狗加入</button>
+          </div>
+        </div>
+
+        <div class="card walk">
+          <div class="walk-top"><b>玉山公園・夜間散步團</b><span class="walk-when">今天 19:00</span></div>
+          <div class="walk-meta">主揪：柴柴爸 ｜ 全犬型歡迎 ｜ 慢慢走 60 分鐘</div>
+          <div class="walk-foot">
+            <div style="display:flex;align-items:center">
+              <div class="dogs"><span class="dog-ava">🦮</span><span class="dog-ava">🐕‍🦺</span></div>
+              <span class="count" id="c2">4 隻已報名</span>
+            </div>
+            <button class="btn-green btn-sm" id="j2" onclick="joinWalk(2)">＋帶狗加入</button>
+          </div>
+        </div>
+
+        <div class="card walk">
+          <div class="walk-top"><b>虎頭山公園・週六晨走團</b><span class="walk-when">週六 07:00</span></div>
+          <div class="walk-meta">主揪：黑糖麻麻 ｜ 大型犬友善 ｜ 快走 90 分鐘</div>
+          <div class="walk-foot">
+            <div style="display:flex;align-items:center">
+              <div class="dogs"><span class="dog-ava">🐕</span><span class="dog-ava">🦮</span><span class="dog-ava">🐶</span></div>
+              <span class="count" id="c3">9 隻已報名</span>
+            </div>
+            <button class="btn-green btn-sm" id="j3" onclick="joinWalk(3)">＋帶狗加入</button>
+          </div>
+        </div>
+
+        <button class="btn-ghost" style="width:100%" onclick="toast('（示意）發起揪團表單')">🐾 我要發起揪團</button>
+
+        <div class="section-t">昨天的散步小報告</div>
+        <div class="card report">
+          <div class="walk-top"><b>風禾公園・傍晚團</b><span class="walk-when">走了 2.3 km</span></div>
+          <div class="walk-meta">波比和 5 隻狗友一起走了 42 分鐘 🐾</div>
+          <div class="photos"><div>📸</div><div>🐶</div><div>🐕</div><div>🎾</div></div>
+          <div class="walk-meta" style="margin-bottom:6px">打卡 tag 一起走的狗：</div>
+          <div class="tagrow" style="margin:0 0 12px">
+            <span class="tag g">@柴柴</span><span class="tag g">@布丁</span><span class="tag g">@黑糖</span>
+            <button class="tag-add" id="addfriend" onclick="addFriend()">@麻糬 ＋加狗友</button>
+          </div>
+          <button class="btn-green btn-sm" style="width:100%" onclick="toast('小報告卡片已分享（示意）')">分享到 LINE / IG</button>
+        </div>
+
+        <div class="section-t">本週曬貓比賽 🏆 #奇怪睡姿大賽</div>
+        <div class="contest">
+          <button class="cat-entry" id="ce0" onclick="catVote(0)"><span class="ce">😹</span><b>麻吉</b><span class="v" id="cv0">128 票</span></button>
+          <button class="cat-entry" id="ce1" onclick="catVote(1)"><span class="ce">🐱</span><b>圓圓</b><span class="v" id="cv1">96 票</span></button>
+          <button class="cat-entry" id="ce2" onclick="catVote(2)"><span class="ce">🙀</span><b>嚕嚕</b><span class="v" id="cv2">87 票</span></button>
+        </div>
+        <p style="font-size:11.5px;color:var(--ink-soft);margin:8px 4px 12px">週日開獎，冠軍獎品：汪汪手作坊零食組 🦴（商城廠商贊助）</p>
+
+        <div class="card post">
+          <div class="post-head">
+            <span class="pa">🐱</span>
+            <div><b>圓圓 round_cat</b><span class="sub">圓圓麻・📍 藝文特區</span></div>
+          </div>
+          <div class="post-photo warm" id="pp-p2" onclick="dblTap(event,'p2')">🐱</div>
+          <div class="post-body">
+            <div class="post-actions">
+              <button class="pact" id="pl-p2" onclick="likePost('p2')">🤍</button>
+              <button class="pact" onclick="toast('留言（示意）')">💬</button>
+              <button class="pact" onclick="toast('已分享（示意）')">✈️</button>
+            </div>
+            <b class="plikes" id="plc-p2">2,871 個讚</b>
+            <p><b>圓圓</b> 參賽 #奇怪睡姿大賽 🏆 這樣睡真的舒服嗎 😹 #曬貓 #貓奴日常</p>
+            <span class="ptime">5 小時前</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 公園地圖 + 友善餐廳 -->
+      <section class="page" id="page-map">
+        <div class="seg">
+          <button class="on" id="seg-park" onclick="segMap('park')">🌳 公園</button>
+          <button id="seg-rest" onclick="segMap('rest')">☕ 友善餐廳</button>
+        </div>
+
+        <div id="map-park">
+          <div class="mapbox" aria-label="示意地圖">
+            <svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img">
+              <rect width="360" height="220" fill="#DCE8D5"/>
+              <path d="M0 60 L360 40" stroke="#fff" stroke-width="10" fill="none"/>
+              <path d="M0 150 L360 170" stroke="#fff" stroke-width="14" fill="none"/>
+              <path d="M120 0 L100 220" stroke="#fff" stroke-width="8" fill="none"/>
+              <path d="M260 0 L280 220" stroke="#fff" stroke-width="8" fill="none"/>
+              <ellipse cx="65" cy="105" rx="42" ry="30" fill="#B9D8AC"/>
+              <ellipse cx="190" cy="90" rx="50" ry="34" fill="#B9D8AC"/>
+              <ellipse cx="310" cy="120" rx="38" ry="28" fill="#B9D8AC"/>
+              <g class="pin sel" id="pin0" onclick="pickPark(0)">
+                <circle class="halo" cx="190" cy="90" r="26" fill="#3E8E5A"/>
+                <circle cx="190" cy="90" r="14" fill="#3E8E5A"/>
+                <text x="190" y="95" font-size="13" text-anchor="middle" fill="#fff">🐕</text>
+              </g>
+              <g class="pin" id="pin1" onclick="pickPark(1)">
+                <circle class="halo" cx="65" cy="105" r="26" fill="#3E8E5A"/>
+                <circle cx="65" cy="105" r="14" fill="#3E8E5A"/>
+                <text x="65" y="110" font-size="13" text-anchor="middle" fill="#fff">🐕</text>
+              </g>
+              <g class="pin" id="pin2" onclick="pickPark(2)">
+                <circle class="halo" cx="310" cy="120" r="26" fill="#3E8E5A"/>
+                <circle cx="310" cy="120" r="14" fill="#3E8E5A"/>
+                <text x="310" y="125" font-size="13" text-anchor="middle" fill="#fff">🐕</text>
+              </g>
+            </svg>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <div class="walk-top"><b id="pk-name">風禾公園</b><span class="walk-when" id="pk-now">現在 8 隻狗 🔥</span></div>
+            <div class="walk-meta" id="pk-desc">大草皮、有飲水台，傍晚最熱鬧</div>
+            <div class="section-t" style="margin:12px 0 4px">今日熱門時段</div>
+            <div class="busy" id="pk-bars"></div>
+            <div class="busy-l"><span>6時</span><span>9時</span><span>12時</span><span>15時</span><span>18時</span><span>21時</span></div>
+            <div class="tagrow" id="pk-tags"></div>
+            <button class="btn-ghost btn-sm" style="width:100%;margin-top:12px" id="sub-btn" onclick="toggleSub()">🔔 訂閱這個公園的狗況通知</button>
+          </div>
+        </div>
+
+        <div id="map-rest" hidden>
+          <div class="section-t">狗友推薦的友善店家</div>
+          <div class="card rest">
+            <div class="ico">🍰</div>
+            <div style="flex:1">
+              <b>毛孩子咖啡 Paw Café</b>
+              <div class="stars">★★★★★ <span style="color:var(--ink-soft)">4.9（128 則）</span></div>
+              <div class="sub">有寵物座位區・提供狗狗鮮食餐</div>
+            </div>
+          </div>
+          <div class="card rest">
+            <div class="ico">🍜</div>
+            <div style="flex:1">
+              <b>巷口麵屋（戶外區可帶狗）</b>
+              <div class="stars">★★★★☆ <span style="color:var(--ink-soft)">4.6（52 則）</span></div>
+              <div class="sub">戶外座位友善・有水碗</div>
+            </div>
+          </div>
+          <div class="card rest">
+            <div class="ico">🧋</div>
+            <div style="flex:1">
+              <b>綠蔭茶飲</b>
+              <div class="stars">★★★★☆ <span style="color:var(--ink-soft)">4.5（89 則）</span></div>
+              <div class="sub">店門口可繫繩等候・店員超愛狗</div>
+            </div>
+          </div>
+          <button class="btn-ghost" style="width:100%" onclick="toast('（示意）推薦店家表單')">＋ 推薦一間友善店家</button>
+        </div>
+      </section>
+
+      <!-- 配對交友 -->
+      <section class="page" id="page-match">
+        <div class="section-t" style="margin-top:14px">幫波比找新朋友</div>
+        <div class="tagrow" style="margin-top:0">
+          <span class="tag a">品種：柯基優先</span>
+          <span class="tag g">距離 3km 內</span>
+          <span class="tag g">體型相近</span>
+        </div>
+        <div class="match-stack" id="mstack"></div>
+        <div class="match-empty" id="mempty" hidden>
+          <span class="big">🐾</span>
+          附近的狗友今天滑完了！<br>明天會有新朋友出現
+          <button class="btn-ghost btn-sm" onclick="resetMatch()">再看一次</button>
+        </div>
+        <div class="mbtns" id="mbtns">
+          <button class="mbtn nope" onclick="swipeCard(-1)" aria-label="略過">✖</button>
+          <button class="mbtn like" onclick="swipeCard(1)" aria-label="喜歡">💚</button>
+        </div>
+      </section>
+
+      <!-- 我的狗狗 -->
+      <section class="page" id="page-dog">
+        <div class="section-t">我的狗狗檔案</div>
+        <div class="card dogcard">
+          <div class="dog-photo" id="dog-main">🐶</div>
+          <div>
+            <b>波比 Bobby</b>
+            <div class="sub">柯基 ・ 3 歲 ・ 男生 ・ 12kg</div>
+            <div class="tagrow">
+              <span class="tag g">親人</span><span class="tag g">愛跑</span><span class="tag a">怕大狗</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-t">波比的散步紀錄</div>
+        <div class="stat-grid">
+          <div class="stat"><b>42<small style="font-size:11px"> km</small></b><span>本月里程</span></div>
+          <div class="stat"><b>12<small style="font-size:11px"> 次</small></b><span>參加揪團</span></div>
+          <div class="stat"><b>3<small style="font-size:11px"> 座</small></b><span>解鎖公園</span></div>
+        </div>
+
+        <div class="section-t">徽章</div>
+        <div class="badges">
+          <div class="badge-card"><span class="bi">🏅</span>揪團常客<br>10 次達成</div>
+          <div class="badge-card"><span class="bi">🌳</span>制霸藝文特區<br>三大公園</div>
+          <div class="badge-card locked"><span class="bi">🔥</span>連續 4 週全勤<br>還差 1 週</div>
+        </div>
+
+        <div class="section-t">一起遛過的狗友</div>
+        <div class="friends">
+          <div class="friend"><div class="fa">🐕</div>柴柴</div>
+          <div class="friend"><div class="fa">🐩</div>布丁</div>
+          <div class="friend"><div class="fa">🦮</div>黑糖</div>
+          <div class="friend"><div class="fa">🐶</div>Q比</div>
+          <div class="friend"><div class="fa">🐕‍🦺</div>米魯</div>
+          <div class="friend"><div class="fa">＋12</div>更多</div>
+        </div>
+
+        <div class="upload" id="upload-zone" role="button" tabindex="0"
+             onclick="document.getElementById('file-in').click()"
+             onkeydown="if(event.key==='Enter')document.getElementById('file-in').click()">
+          📷 點這裡上傳狗狗照片<br><small>（原型可實際選照片試試）</small>
+        </div>
+        <input type="file" id="file-in" accept="image/*" hidden onchange="addPhoto(this)">
+
+        <div class="section-t">相簿</div>
+        <div class="gallery" id="gallery">
+          <div class="ph">🐕</div><div class="ph">🦴</div><div class="ph">🎾</div>
+        </div>
+      </section>
+
+      <!-- 接單服務 -->
+      <section class="page" id="page-gig">
+        <div class="seg">
+          <button class="on" id="seg-take" onclick="segGig('take')">💰 我要接單</button>
+          <button id="seg-post" onclick="segGig('post')">🙋 我要找幫手</button>
+        </div>
+
+        <div id="gig-take">
+          <div class="section-t">附近的委託（4 件）</div>
+          <div class="card gig">
+            <div class="gig-top"><b>幫波比遛 40 分鐘</b><span class="price">NT$ 250</span></div>
+            <div class="sub">📍 藝文特區・風禾公園周邊 ｜ 今天 12:00–14:00 之間</div>
+            <div class="gig-foot">
+              <span class="badge walk">🐕 代遛</span>
+              <button class="btn-green btn-sm" id="g1" onclick="takeGig(1)">接單</button>
+            </div>
+          </div>
+          <div class="card gig">
+            <div class="gig-top"><b>上門餵食＋陪玩 30 分</b><span class="price">NT$ 200</span></div>
+            <div class="sub">📍 桃園區・中正路商圈 ｜ 明天 08:00 前</div>
+            <div class="gig-foot">
+              <span class="badge feed">🍖 餵食</span>
+              <button class="btn-green btn-sm" id="g2" onclick="takeGig(2)">接單</button>
+            </div>
+          </div>
+          <div class="card gig">
+            <div class="gig-top"><b>出差 3 天・上門餵貓早晚各一次</b><span class="price">NT$ 900</span></div>
+            <div class="sub">📍 中路重劃區 ｜ 7/14–7/16 ｜ 兩隻米克斯貓，親人不怕生</div>
+            <div class="gig-foot">
+              <span class="badge feed">🐱 餵貓</span>
+              <button class="btn-green btn-sm" id="g3" onclick="takeGig(3)">接單</button>
+            </div>
+          </div>
+          <div class="card gig">
+            <div class="gig-top"><b>出國 5 晚・貓咪陪睡員（留宿）</b><span class="price">NT$ 2,000<small style="font-size:11px">/晚</small></span></div>
+            <div class="sub">📍 藝文特區 ｜ 7/20–7/25 ｜ 一隻布偶貓有分離焦慮，需留宿過夜＋每晚回報影片</div>
+            <div class="gig-foot">
+              <span class="badge sleep">🌙 陪睡</span>
+              <button class="btn-green btn-sm" id="g4" onclick="takeGig(4)">接單</button>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--ink-soft);margin:8px 4px">
+            💡 正式版：接單者需完成身分驗證＋評價制度，平台每筆抽成 15–20%。
+          </p>
+        </div>
+
+        <div id="gig-post" hidden>
+          <div class="section-t">發布委託</div>
+          <div class="card">
+            <label>服務類型</label>
+            <select id="f-type"><option>代遛狗</option><option>上門餵食</option><option>餵食＋陪玩</option></select>
+            <label>日期時間</label>
+            <input type="text" placeholder="例：7/12（六）下午 3 點前">
+            <label>預算（NT$）</label>
+            <input type="number" placeholder="250">
+            <label>備註</label>
+            <textarea rows="2" placeholder="狗狗個性、注意事項…"></textarea>
+            <button class="btn-green" style="width:100%" onclick="toast('✅ 委託已發布（示意）')">發布委託</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 商城 -->
+      <section class="page" id="page-shop">
+        <div class="section-t">在地手作零食</div>
+        <div class="shop-grid">
+          <div class="prod">
+            <div class="pic">🦴</div>
+            <b>低溫烘雞肉乾 100g</b>
+            <span class="maker">🏪 汪汪手作坊</span>
+            <div class="row"><span class="price">NT$ 180</span><button class="btn-ghost btn-sm" onclick="toast('已加入購物車 🛒')">＋</button></div>
+          </div>
+          <div class="prod">
+            <div class="pic">🍪</div>
+            <b>南瓜燕麥餅乾</b>
+            <span class="maker">🏪 毛日子烘焙</span>
+            <div class="row"><span class="price">NT$ 150</span><button class="btn-ghost btn-sm" onclick="toast('已加入購物車 🛒')">＋</button></div>
+          </div>
+          <div class="prod">
+            <div class="pic">🐟</div>
+            <b>鮭魚凍乾 60g</b>
+            <span class="maker">🏪 海邊小廚</span>
+            <div class="row"><span class="price">NT$ 220</span><button class="btn-ghost btn-sm" onclick="toast('已加入購物車 🛒')">＋</button></div>
+          </div>
+          <div class="prod">
+            <div class="pic">🥩</div>
+            <b>牛肉潔牙棒 6 入</b>
+            <span class="maker">🏪 汪汪手作坊</span>
+            <div class="row"><span class="price">NT$ 160</span><button class="btn-ghost btn-sm" onclick="toast('已加入購物車 🛒')">＋</button></div>
+          </div>
+        </div>
+        <div class="vendor-cta">
+          <b>你是手作零食廠商嗎？</b><br>
+          申請上架，把商品賣給最精準的狗主人社群。
+          <div style="margin-top:8px"><button class="btn-amber btn-sm" onclick="toast('（示意）廠商申請表單')">申請廠商上架</button></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Tab bar -->
+    <nav class="tabbar">
+      <button class="tab on" id="tab-home" onclick="switchTab('home')"><span class="ti">🏠</span>動態</button>
+      <button class="tab" id="tab-map" onclick="switchTab('map')"><span class="ti">🗺️</span>地圖</button>
+      <button class="tab" id="tab-match" onclick="switchTab('match')"><span class="ti">💕</span>配對</button>
+      <button class="tab" id="tab-dog" onclick="switchTab('dog')"><span class="ti">🐶</span>我的狗</button>
+      <button class="tab" id="tab-gig" onclick="switchTab('gig')"><span class="ti">🤝</span>接單</button>
+      <button class="tab" id="tab-shop" onclick="switchTab('shop')"><span class="ti">🦴</span>商城</button>
+    </nav>
+
+    <!-- 配對成功彈窗 -->
+    <div class="match-pop" id="mpop">
+      <div class="box">
+        <span class="big">🎉</span>
+        <b>配對成功！</b>
+        <p>波比 💚 <span id="mpop-name">蛋捲</span>・你們都想認識對方</p>
+        <div class="btns">
+          <button class="btn-green" onclick="matchToWalk()">🐾 約牠一起遛狗</button>
+          <button class="btn-ghost btn-sm" onclick="closePop()">繼續滑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- tab 切換 ----
+const TABS = ['home','map','match','dog','gig','shop'];
+function switchTab(name){
+  TABS.forEach(t=>{
+    document.getElementById('page-'+t).classList.toggle('active', t===name);
+    document.getElementById('tab-'+t).classList.toggle('on', t===name);
+  });
+  document.getElementById('screen').scrollTop = 0;
+}
+
+// ---- toast ----
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+// ---- 揪團加入 ----
+const walkCounts = {1:6, 2:4, 3:9};
+const joinedSet = new Set();
+function joinWalk(id){
+  const btn = document.getElementById('j'+id);
+  const cnt = document.getElementById('c'+id);
+  if(joinedSet.has(id)){
+    joinedSet.delete(id);
+    walkCounts[id]--;
+    btn.textContent = '＋帶狗加入';
+    btn.classList.remove('joined');
+    btn.classList.add('btn-green');
+    toast('已取消報名');
+  }else{
+    joinedSet.add(id);
+    walkCounts[id]++;
+    btn.textContent = '✓ 已報名';
+    btn.classList.add('joined');
+    btn.classList.remove('btn-green');
+    toast('🐕 報名成功！時間到記得帶狗狗來');
+  }
+  cnt.textContent = walkCounts[id] + ' 隻已報名';
+}
+
+// ---- 公園資料 ----
+const PARKS = [
+  {name:'風禾公園', now:'現在 8 隻狗 🔥', desc:'大草皮、腹地開闊，傍晚最熱鬧',
+   bars:[2,3,4,5,9,7], tags:['大草皮','有樹蔭','夜間照明','溜滑梯地標']},
+  {name:'玉山公園', now:'現在 3 隻狗', desc:'藝文特區旁的社區公園，晚上散步氣氛好',
+   bars:[1,2,3,4,6,8], tags:['近藝文特區','夜間照明','餐廳在附近']},
+  {name:'虎頭山公園', now:'現在 5 隻狗', desc:'超大腹地＋步道，適合大型犬放電',
+   bars:[6,8,4,3,7,4], tags:['超大腹地','大型犬友善','停車方便']}
+];
+function pickPark(i){
+  document.querySelectorAll('.pin').forEach(p=>p.classList.toggle('sel', p.id==='pin'+i));
+  const pk = PARKS[i];
+  document.getElementById('pk-name').textContent = pk.name;
+  document.getElementById('pk-now').textContent = pk.now;
+  document.getElementById('pk-desc').textContent = pk.desc;
+  const bars = document.getElementById('pk-bars');
+  bars.innerHTML = '';
+  const max = Math.max(...pk.bars);
+  pk.bars.forEach(v=>{
+    const bar = document.createElement('i');
+    bar.style.height = Math.round(v/max*100) + '%';
+    if(v===max) bar.classList.add('hot');
+    bars.appendChild(bar);
+  });
+  const tags = document.getElementById('pk-tags');
+  tags.innerHTML = '';
+  pk.tags.forEach(t=>{
+    const s = document.createElement('span');
+    s.className = 'tag g';
+    s.textContent = t;
+    tags.appendChild(s);
+  });
+}
+pickPark(0);
+
+// ---- IG 式動態牆 ----
+const postLikes = {p1:{n:1204, on:false}, p2:{n:2871, on:false}};
+let postSeq = 0;
+function likePost(id){
+  const st = postLikes[id];
+  st.on = !st.on;
+  st.n += st.on ? 1 : -1;
+  document.getElementById('pl-'+id).textContent = st.on ? '❤️' : '🤍';
+  document.getElementById('plc-'+id).textContent = st.n.toLocaleString() + ' 個讚';
+}
+let lastTap = {};
+function dblTap(e, id){
+  const now = Date.now();
+  if(lastTap[id] && now - lastTap[id] < 350){
+    const photo = document.getElementById('pp-'+id);
+    const h = document.createElement('span');
+    h.className = 'bigheart';
+    h.textContent = '❤️';
+    photo.appendChild(h);
+    setTimeout(()=>h.remove(), 700);
+    if(!postLikes[id].on) likePost(id);
+    lastTap[id] = 0;
+  }else{
+    lastTap[id] = now;
+  }
+}
+function addPost(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    postSeq++;
+    const id = 'u' + postSeq;
+    postLikes[id] = {n:0, on:false};
+    const div = document.createElement('div');
+    div.className = 'card post';
+    div.innerHTML =
+      '<div class="post-head"><span class="pa">🐶</span>' +
+      '<div><b>波比 bobby_corgi</b><span class="sub">你・📍 藝文特區・剛剛</span></div></div>' +
+      '<div class="post-photo" id="pp-'+id+'" onclick="dblTap(event,\''+id+'\')"><img alt="毛孩照片"></div>' +
+      '<div class="post-body"><div class="post-actions">' +
+      '<button class="pact" id="pl-'+id+'" onclick="likePost(\''+id+'\')">🤍</button>' +
+      '<button class="pact" onclick="toast(\'留言（示意）\')">💬</button>' +
+      '<button class="pact" onclick="toast(\'已分享（示意）\')">✈️</button></div>' +
+      '<b class="plikes" id="plc-'+id+'">0 個讚</b>' +
+      '<p><b>波比</b> 第一次發文就上手 🐾 #我的毛孩 #藝文特區狗友</p>' +
+      '<span class="ptime">剛剛</span></div>';
+    div.querySelector('img').src = ev.target.result;
+    document.getElementById('stories-row').after(div);
+    document.getElementById('screen').scrollTop = 0;
+    toast('📸 已發布到動態牆！');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ---- 曬貓比賽 ----
+const catVotes = [128, 96, 87];
+const catNames = ['麻吉','圓圓','嚕嚕'];
+let votedCat = -1;
+function catVote(i){
+  if(votedCat !== -1){ toast('本週已投過票囉，週日開獎 🏆'); return; }
+  votedCat = i;
+  catVotes[i]++;
+  document.getElementById('cv'+i).textContent = catVotes[i] + ' 票';
+  document.getElementById('ce'+i).classList.add('voted');
+  toast('🏆 已投給「' + catNames[i] + '」！週日開獎');
+}
+
+// ---- 配對交友 ----
+const MATCH_DOGS = [
+  {emoji:'🐕', name:'麻糬', sub:'柯基・2 歲・男生・距離 0.8km', match:false},
+  {emoji:'🐶', name:'蛋捲', sub:'柯基・3 歲・女生・距離 1.2km', match:true},
+  {emoji:'🐩', name:'拿鐵', sub:'貴賓・4 歲・女生・距離 1.5km', match:false},
+  {emoji:'🦮', name:'OREO', sub:'柴犬・1 歲・男生・距離 2.0km', match:false},
+  {emoji:'🐕‍🦺', name:'米魯', sub:'黃金獵犬・2 歲・男生・距離 2.8km', match:true}
+];
+let mi = 0;
+function cardHtml(d, cls){
+  return '<div class="mcard '+cls+'"><div class="mphoto">'+d.emoji+'</div>' +
+    '<div class="minfo"><b>'+d.name+'</b><div class="sub">'+d.sub+'</div></div></div>';
+}
+function renderDeck(){
+  const stack = document.getElementById('mstack');
+  const empty = document.getElementById('mempty');
+  const btns = document.getElementById('mbtns');
+  if(mi >= MATCH_DOGS.length){
+    stack.hidden = true; btns.hidden = true; empty.hidden = false;
+    return;
+  }
+  stack.hidden = false; btns.hidden = false; empty.hidden = true;
+  let html = '';
+  if(mi + 1 < MATCH_DOGS.length) html += cardHtml(MATCH_DOGS[mi+1], 'back');
+  html += cardHtml(MATCH_DOGS[mi], 'front');
+  stack.innerHTML = html;
+  attachDrag(stack.querySelector('.front'));
+}
+function swipeCard(dir){
+  const card = document.querySelector('#mstack .front');
+  if(!card) return;
+  const dog = MATCH_DOGS[mi];
+  card.style.transition = 'transform .3s ease, opacity .3s ease';
+  card.style.transform = 'translateX(' + (dir*480) + 'px) rotate(' + (dir*18) + 'deg)';
+  card.style.opacity = '0';
+  setTimeout(()=>{
+    mi++;
+    renderDeck();
+    if(dir === 1){
+      if(dog.match){
+        document.getElementById('mpop-name').textContent = dog.name;
+        document.getElementById('mpop').classList.add('show');
+      }else{
+        toast('💚 已送出喜歡，等 ' + dog.name + ' 回應');
+      }
+    }
+  }, 280);
+}
+function attachDrag(card){
+  if(!card) return;
+  let sx = 0, dx = 0, dragging = false;
+  card.addEventListener('pointerdown', e=>{
+    dragging = true; sx = e.clientX; card.setPointerCapture(e.pointerId);
+    card.style.transition = 'none';
+  });
+  card.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    dx = e.clientX - sx;
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx/18) + 'deg)';
+  });
+  card.addEventListener('pointerup', ()=>{
+    dragging = false;
+    if(Math.abs(dx) > 90){ swipeCard(dx > 0 ? 1 : -1); }
+    else{
+      card.style.transition = 'transform .2s ease';
+      card.style.transform = '';
+    }
+    dx = 0;
+  });
+}
+function resetMatch(){ mi = 0; renderDeck(); }
+function closePop(){ document.getElementById('mpop').classList.remove('show'); }
+function matchToWalk(){
+  closePop();
+  switchTab('home');
+  toast('🐾 已幫波比和新朋友發起揪團邀請（示意）');
+}
+renderDeck();
+
+// ---- 打卡加狗友 ----
+let friended = false;
+function addFriend(){
+  if(friended) return;
+  friended = true;
+  const btn = document.getElementById('addfriend');
+  btn.textContent = '✓ 麻糬已是狗友';
+  btn.classList.add('done');
+  const f = document.createElement('div');
+  f.className = 'friend';
+  f.innerHTML = '<div class="fa">🐕</div>麻糬';
+  document.querySelector('.friends').prepend(f);
+  toast('🔔 已加「麻糬」為狗友，牠報名揪團時會通知你');
+}
+
+// ---- 公園訂閱 ----
+let subbed = false;
+function toggleSub(){
+  subbed = !subbed;
+  const btn = document.getElementById('sub-btn');
+  const name = document.getElementById('pk-name').textContent;
+  if(subbed){
+    btn.textContent = '✓ 已訂閱通知（點擊取消）';
+    toast('🔔 ' + name + ' 有狗聚集時通知你');
+  }else{
+    btn.textContent = '🔔 訂閱這個公園的狗況通知';
+    toast('已取消訂閱');
+  }
+}
+
+// ---- 地圖分段 ----
+function segMap(which){
+  document.getElementById('map-park').hidden = which!=='park';
+  document.getElementById('map-rest').hidden = which!=='rest';
+  document.getElementById('seg-park').classList.toggle('on', which==='park');
+  document.getElementById('seg-rest').classList.toggle('on', which==='rest');
+}
+
+// ---- 照片上傳 ----
+let photoCount = 0;
+function addPhoto(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const img = document.createElement('img');
+    img.src = e.target.result;
+    img.alt = '狗狗照片';
+    if(photoCount === 0){
+      const main = document.getElementById('dog-main');
+      main.textContent = '';
+      main.appendChild(img.cloneNode());
+    }
+    const ph = document.createElement('div');
+    ph.className = 'ph';
+    ph.appendChild(img);
+    document.getElementById('gallery').prepend(ph);
+    photoCount++;
+    toast('📷 照片已上傳！');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ---- 接單 ----
+const takenSet = new Set();
+function takeGig(id){
+  const btn = document.getElementById('g'+id);
+  if(takenSet.has(id)) return;
+  takenSet.add(id);
+  btn.textContent = '✓ 已接單';
+  btn.classList.add('joined');
+  btn.classList.remove('btn-green');
+  toast('🤝 接單成功！請準時抵達（示意）');
+}
+
+// ---- 接單分段 ----
+function segGig(which){
+  document.getElementById('gig-take').hidden = which!=='take';
+  document.getElementById('gig-post').hidden = which!=='post';
+  document.getElementById('seg-take').classList.toggle('on', which==='take');
+  document.getElementById('seg-post').classList.toggle('on', which==='post');
+}
+</script>

@@ -34,14 +34,16 @@ jobs:
             -sdk iphonesimulator \
             -configuration Debug \
             -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
 
       - name: 打包 .app 供下載檢視
         working-directory: ios-app/ios/App
         run: |
-          cd "$(find . -name '*.app' -path '*Debug-iphonesimulator*' | head -1 | xargs dirname)"
-          zip -r "$GITHUB_WORKSPACE/JiuHaoGo-simulator-build.zip" ./*.app
+          ls -la build/Build/Products/Debug-iphonesimulator/
+          cd build/Build/Products/Debug-iphonesimulator
+          zip -r "$GITHUB_WORKSPACE/JiuHaoGo-simulator-build.zip" ./App.app
 
       - name: 上傳建置結果
         uses: actions/upload-artifact@v4

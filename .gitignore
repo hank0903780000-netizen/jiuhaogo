@@ -6,3 +6,8 @@ ios-app/ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 *.log
 .DS_Store
 ios-app/store-assets/screenshots/
+
+# 私鑰／機密資料，絕對不能進版控
+app金鑰/
+*.p8
+private_keys/

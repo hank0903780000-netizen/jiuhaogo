@@ -1,0 +1,75 @@
+name: iOS 正式簽章上傳 TestFlight
+
+# 手動觸發：到 GitHub 網站 Actions 分頁點「Run workflow」才會執行，
+# 避免每次 push 都不小心送出一次 TestFlight 版本。
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安裝 npm 套件
+        run: npm install
+
+      - name: 同步 Capacitor（把網頁內容更新進 iOS 專案）
+        run: npx cap sync ios
+
+      - name: 安裝 CocoaPods 依賴
+        working-directory: ios-app/ios/App
+        run: pod install
+
+      - name: 放置 App Store Connect API 金鑰
+        working-directory: ios-app/ios/App
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.ASC_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+
+      - name: 封存（Archive，正式簽章）
+        working-directory: ios-app/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -destination "generic/platform=iOS" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            archive
+
+      - name: 匯出 .ipa
+        working-directory: ios-app/ios/App
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}
+
+      - name: 上傳到 TestFlight
+        working-directory: ios-app/ios/App
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            -f build/export/*.ipa \
+            --apiKey ${{ secrets.ASC_KEY_ID }} \
+            --apiIssuer ${{ secrets.ASC_ISSUER_ID }}
+
+      - name: 上傳 .ipa 供備查
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: JiuHaoGo-release-ipa
+          path: ios-app/ios/App/build/export/*.ipa
+          retention-days: 30

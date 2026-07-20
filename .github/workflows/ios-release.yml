@@ -26,9 +26,27 @@ jobs:
 
       - name: 放置 App Store Connect API 金鑰
         working-directory: ios-app/ios/App
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
+          if [ -z "$ASC_KEY_P8" ] || [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ]; then
+            echo "❌ 有一筆 GitHub Secret 是空的或沒設定："
+            echo "   ASC_KEY_P8 長度＝${#ASC_KEY_P8}（正常應該有好幾百字）"
+            echo "   ASC_KEY_ID＝$ASC_KEY_ID"
+            echo "   ASC_ISSUER_ID＝$ASC_ISSUER_ID"
+            echo "請到 Settings → Secrets and variables → Actions 檢查這三筆是否都存在且內容正確"
+            exit 1
+          fi
           mkdir -p ~/private_keys
-          echo "${{ secrets.ASC_KEY_P8 }}" > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          printf '%s\n' "$ASC_KEY_P8" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          if ! grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey_${ASC_KEY_ID}.p8; then
+            echo "❌ 金鑰檔案內容格式不對，開頭應該要有 -----BEGIN PRIVATE KEY-----"
+            echo "請重新從 App Store Connect 下載 .p8，用純文字編輯器打開、整份內容複製貼進 GitHub Secret"
+            exit 1
+          fi
+          echo "✅ 金鑰檔案已就緒（$(wc -l < ~/private_keys/AuthKey_${ASC_KEY_ID}.p8) 行）"
 
       - name: 封存（Archive，正式簽章）
         working-directory: ios-app/ios/App

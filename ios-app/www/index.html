@@ -23,6 +23,7 @@
 }
 /* 固定使用白色主題（使用者指定不要黑底） */
 *{box-sizing:border-box}
+[hidden]{display:none !important} /* 避免元件自身的 display:flex/grid 規則蓋掉 JS 設的 hidden 屬性 */
 html,body{margin:0; padding:0; height:100%}
 body{
   background:var(--bg); color:var(--ink);

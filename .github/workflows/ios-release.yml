@@ -45,8 +45,12 @@ jobs:
           PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_PATH
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          # macOS 內建 base64 用的是 -D（BSD 版），不是 Linux 的 --decode，兩者不能混用
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 -D -o $CERT_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 -D -o $PP_PATH
+
+          echo "還原後的憑證檔案大小：$(wc -c < $CERT_PATH) bytes（正常應該接近 3300 多）"
+          echo "還原後的 Profile 檔案大小：$(wc -c < $PP_PATH) bytes（正常應該接近 12000 多）"
 
           # 建立暫時鑰匙圈，只在這次建置中使用
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH

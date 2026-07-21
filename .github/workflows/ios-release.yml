@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: ios-app

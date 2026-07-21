@@ -70,15 +70,13 @@ jobs:
       - name: 封存（Archive，正式簽章・手動指定憑證）
         working-directory: ios-app/ios/App
         run: |
+          # 簽章設定已經寫在 App.xcodeproj 的 Release 設定裡（只影響 App 這個
+          # 目標，不會波及 CocoaPods 的內部函式庫），這裡不再全域覆蓋。
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath build/App.xcarchive \
             -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="JiuHaoGo AppStore" \
-            DEVELOPMENT_TEAM=XUKUDKLGZA \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             archive
 

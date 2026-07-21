@@ -24,31 +24,44 @@ jobs:
         working-directory: ios-app/ios/App
         run: pod install
 
-      - name: 放置 App Store Connect API 金鑰
-        working-directory: ios-app/ios/App
+      # ── 憑證安裝：採用 GitHub 官方文件的標準做法 ──────────────
+      # 用「手動準備好的憑證」直接匯入暫時鑰匙圈，不透過 Apple 自動建立，
+      # 這樣完全不會再觸發「需要註冊裝置」的檢查。
+      - name: 安裝簽章憑證與 Provisioning Profile
         env:
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          if [ -z "$ASC_KEY_P8" ] || [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ]; then
-            echo "❌ 有一筆 GitHub Secret 是空的或沒設定："
-            echo "   ASC_KEY_P8 長度＝${#ASC_KEY_P8}（正常應該有好幾百字）"
-            echo "   ASC_KEY_ID＝$ASC_KEY_ID"
-            echo "   ASC_ISSUER_ID＝$ASC_ISSUER_ID"
-            echo "請到 Settings → Secrets and variables → Actions 檢查這三筆是否都存在且內容正確"
+          if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$P12_PASSWORD" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ] || [ -z "$KEYCHAIN_PASSWORD" ]; then
+            echo "❌ 有一筆 GitHub Secret 是空的，請檢查 BUILD_CERTIFICATE_BASE64／P12_PASSWORD／BUILD_PROVISION_PROFILE_BASE64／KEYCHAIN_PASSWORD"
             exit 1
           fi
-          mkdir -p ~/private_keys
-          printf '%s\n' "$ASC_KEY_P8" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          if ! grep -q "BEGIN PRIVATE KEY" ~/private_keys/AuthKey_${ASC_KEY_ID}.p8; then
-            echo "❌ 金鑰檔案內容格式不對，開頭應該要有 -----BEGIN PRIVATE KEY-----"
-            echo "請重新從 App Store Connect 下載 .p8，用純文字編輯器打開、整份內容複製貼進 GitHub Secret"
-            exit 1
-          fi
-          echo "✅ 金鑰檔案已就緒（$(wc -l < ~/private_keys/AuthKey_${ASC_KEY_ID}.p8) 行）"
 
-      - name: 封存（Archive，正式簽章）
+          CERT_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+          # 建立暫時鑰匙圈，只在這次建置中使用
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          security import $CERT_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          echo "✅ 憑證與 Profile 已安裝"
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
+
+      - name: 封存（Archive，正式簽章・手動指定憑證）
         working-directory: ios-app/ios/App
         run: |
           xcodebuild -workspace App.xcworkspace \
@@ -56,10 +69,10 @@ jobs:
             -configuration Release \
             -archivePath build/App.xcarchive \
             -destination "generic/platform=iOS" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
-            -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="JiuHaoGo AppStore" \
+            DEVELOPMENT_TEAM=XUKUDKLGZA \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             archive
 
@@ -69,11 +82,16 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
             -exportPath build/export \
-            -exportOptionsPlist ExportOptions.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
-            -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}
+            -exportOptionsPlist ExportOptions.plist
+
+      - name: 放置 App Store Connect API 金鑰（上傳用）
+        working-directory: ios-app/ios/App
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          printf '%s\n' "$ASC_KEY_P8" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
 
       - name: 上傳到 TestFlight
         working-directory: ios-app/ios/App

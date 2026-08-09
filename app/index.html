@@ -486,9 +486,27 @@ button.cat-entry:hover{box-shadow:var(--shadow-md); border-color:#D0D4DC}
     <select id="wf-park">
       <option>風禾公園</option><option>玉山公園</option><option>虎頭山公園</option>
     </select>
+    <label>日期</label>
+    <input id="wf-date" type="date">
     <label>時間</label>
-    <input id="wf-time" placeholder="例：今天 17:30">
-    <button class="btn-green" style="width:100%" onclick="createWalk()">發起</button>
+    <div style="display:flex;gap:10px">
+      <input id="wf-hour" type="number" min="0" max="23" placeholder="時" style="flex:1;width:auto">
+      <span style="align-self:center">:</span>
+      <input id="wf-minute" type="number" min="0" max="59" placeholder="分" style="flex:1;width:auto">
+    </div>
+    <label>活動類型</label>
+    <select id="wf-type">
+      <option value="溫和">🚶 溫和散步（緩慢遊走）</option>
+      <option value="一般">🐾 一般散步（正常速度）</option>
+      <option value="活力">🏃 活力奔跑（狂奔放電）</option>
+      <option value="訓練">🎯 訓練課程（教導指令）</option>
+      <option value="社交">👥 社交聚會（重點交友）</option>
+    </select>
+    <label>預計人數</label>
+    <input id="wf-people" type="number" min="1" max="20" placeholder="你 + 其他人數" value="1">
+    <label>備註（選填）</label>
+    <textarea id="wf-note" rows="2" placeholder="例：不接受大型犬，狗狗要打過疫苗"></textarea>
+    <button class="btn-green" style="width:100%" onclick="createWalk()">發起揪團</button>
     <button class="btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="closeOv('ov-walk')">取消</button>
   </div>
 </div>
@@ -967,18 +985,63 @@ function toggleJoin(id){
   renderWalks();
   toast(joined[id] ? '🐕 報名成功！時間到記得帶狗狗來' : '已取消報名');
 }
-function openWalkForm(){ $('ov-walk').classList.add('show'); }
+function openWalkForm(){
+  // 設定預設日期為今天
+  const today = new Date().toISOString().split('T')[0];
+  $('wf-date').value = today;
+  $('wf-hour').value = '17';
+  $('wf-minute').value = '00';
+  $('wf-type').value = '一般';
+  $('wf-people').value = '1';
+  $('ov-walk').classList.add('show');
+}
 function createWalk(){
   const title = $('wf-title').value.trim();
-  const when = $('wf-time').value.trim();
-  if(!title || !when){ toast('標題和時間要填喔'); return; }
-  userWalks.push({id:'uw'+Date.now(), park:$('wf-park').value, title:esc(title), pill:'', when:esc(when), meta:'剛發起', base:1});
+  const date = $('wf-date').value.trim();
+  const hour = $('wf-hour').value.trim();
+  const minute = $('wf-minute').value.trim();
+  const type = $('wf-type').value;
+  const people = parseInt($('wf-people').value, 10) || 1;
+  const note = $('wf-note').value.trim();
+
+  if(!title || !date || !hour || !minute){
+    toast('請填完標題、日期、時間');
+    return;
+  }
+
+  const timeStr = hour.padStart(2, '0') + ':' + minute.padStart(2, '0');
+  const dateObj = new Date(date);
+  const dayName = ['日','一','二','三','四','五','六'][dateObj.getDay()];
+  const displayDate = (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + '(' + dayName + ')';
+
+  const typeEmoji = {'溫和':'🚶','一般':'🐾','活力':'🏃','訓練':'🎯','社交':'👥'};
+  const meta = typeEmoji[type] + ' ' + type + ' ｜ ' + people + ' 人一起遛狗' + (note ? ' ｜ ' + note : '');
+
+  userWalks.push({
+    id:'uw'+Date.now(),
+    park:$('wf-park').value,
+    title:esc(title),
+    pill:'',
+    when:displayDate + ' ' + timeStr,
+    meta:esc(meta),
+    base:1,
+    type: type,
+    people: people,
+    timestamp: new Date(date + 'T' + timeStr).getTime()
+  });
+
   save('jhg_userwalks', userWalks);
-  $('wf-title').value = ''; $('wf-time').value = '';
+  $('wf-title').value = '';
+  $('wf-date').value = '';
+  $('wf-hour').value = '';
+  $('wf-minute').value = '';
+  $('wf-type').value = '一般';
+  $('wf-people').value = '1';
+  $('wf-note').value = '';
   closeOv('ov-walk');
   renderWalks();
   switchTab('walk');
-  toast('🐾 揪團已發起！');
+  toast('🐾 揪團已發起！朋友們快來報名吧 🎉');
 }
 
 // ---------- 公園 ----------

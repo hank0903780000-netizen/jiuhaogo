@@ -328,45 +328,55 @@ button.cat-entry:hover{box-shadow:var(--shadow-md); border-color:#D0D4DC}
   </section>
 
   <!-- 揪團 -->
-  <section class="page" id="page-walk">
-    <div class="card" id="weather-bar" style="display:flex;align-items:center;gap:12px;margin-top:12px">
-      <span id="wx-icon" style="font-size:32px">🌤</span>
-      <div style="flex:1">
-        <b style="font-size:15px"><span id="wx-temp">--</span>°C・降雨機率 <span id="wx-rain">--</span>%</b>
-        <div class="walk-meta" id="wx-verdict">讀取藝文特區即時天氣中…</div>
+  <section class="page" id="page-walk" style="display:grid;grid-template-columns:1fr 1fr;gap:0;overflow:hidden;padding:0">
+    <!-- 左：地圖 -->
+    <div style="display:flex;flex-direction:column;border-right:1px solid var(--line);overflow:hidden">
+      <div class="card" id="weather-bar" style="display:flex;align-items:center;gap:12px;margin:12px;margin-bottom:6px;flex:0">
+        <span id="wx-icon" style="font-size:32px">🌤</span>
+        <div style="flex:1">
+          <b style="font-size:14px"><span id="wx-temp">--</span>°C・<span id="wx-rain">--</span>%</b>
+          <div class="walk-meta" id="wx-verdict" style="font-size:11px">天氣中…</div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;font-size:12px;color:var(--ink-soft)">🗺️ 點公園看揪團</div>
+      <div class="mapbox" aria-label="揪團地圖" style="flex:1;margin:0 12px;border-radius:12px;overflow:hidden">
+        <svg viewBox="0 0 360 235" xmlns="http://www.w3.org/2000/svg" role="img" style="width:100%;height:100%;display:block">
+          <rect width="360" height="235" fill="#DCE8D5"/>
+          <path d="M0 62 L360 42" stroke="#fff" stroke-width="10" fill="none"/>
+          <path d="M0 155 L360 175" stroke="#fff" stroke-width="14" fill="none"/>
+          <path d="M120 0 L100 235" stroke="#fff" stroke-width="8" fill="none"/>
+          <path d="M260 0 L280 235" stroke="#fff" stroke-width="8" fill="none"/>
+          <ellipse cx="65" cy="108" rx="42" ry="30" fill="#B9D8AC"/>
+          <ellipse cx="190" cy="92" rx="50" ry="34" fill="#B9D8AC"/>
+          <ellipse cx="310" cy="122" rx="38" ry="28" fill="#B9D8AC"/>
+          <g class="pin" onclick="gotoPark('風禾公園')" style="cursor:pointer">
+            <circle cx="190" cy="86" r="17" fill="#3E8E5A"/>
+            <text x="190" y="92" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-風禾公園">0</text>
+            <text x="190" y="122" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">風禾公園</text>
+          </g>
+          <g class="pin" onclick="gotoPark('玉山公園')" style="cursor:pointer">
+            <circle cx="65" cy="102" r="17" fill="#3E8E5A"/>
+            <text x="65" y="108" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-玉山公園">0</text>
+            <text x="65" y="138" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">玉山公園</text>
+          </g>
+          <g class="pin" onclick="gotoPark('虎頭山公園')" style="cursor:pointer">
+            <circle cx="310" cy="116" r="17" fill="#3E8E5A"/>
+            <text x="310" y="122" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-虎頭山公園">0</text>
+            <text x="310" y="152" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">虎頭山公園</text>
+          </g>
+        </svg>
+      </div>
+      <div style="padding:8px 12px;display:flex;gap:8px">
+        <button class="btn-green btn-sm" style="flex:1" onclick="openWalkForm()">🐾 新揪團</button>
+        <button class="btn-ghost btn-sm" style="flex:1" onclick="window.open('taoyuan-walks-map.html','_blank')">🗺️ 完整地圖</button>
       </div>
     </div>
-    <div class="section-t">藝文特區・揪團地圖（點公園跳到該區）</div>
-    <div class="mapbox" aria-label="揪團地圖">
-      <svg viewBox="0 0 360 235" xmlns="http://www.w3.org/2000/svg" role="img">
-        <rect width="360" height="235" fill="#DCE8D5"/>
-        <path d="M0 62 L360 42" stroke="#fff" stroke-width="10" fill="none"/>
-        <path d="M0 155 L360 175" stroke="#fff" stroke-width="14" fill="none"/>
-        <path d="M120 0 L100 235" stroke="#fff" stroke-width="8" fill="none"/>
-        <path d="M260 0 L280 235" stroke="#fff" stroke-width="8" fill="none"/>
-        <ellipse cx="65" cy="108" rx="42" ry="30" fill="#B9D8AC"/>
-        <ellipse cx="190" cy="92" rx="50" ry="34" fill="#B9D8AC"/>
-        <ellipse cx="310" cy="122" rx="38" ry="28" fill="#B9D8AC"/>
-        <g class="pin" onclick="gotoPark('風禾公園')">
-          <circle cx="190" cy="86" r="17" fill="#3E8E5A"/>
-          <text x="190" y="92" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-風禾公園">0</text>
-          <text x="190" y="122" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">風禾公園</text>
-        </g>
-        <g class="pin" onclick="gotoPark('玉山公園')">
-          <circle cx="65" cy="102" r="17" fill="#3E8E5A"/>
-          <text x="65" y="108" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-玉山公園">0</text>
-          <text x="65" y="138" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">玉山公園</text>
-        </g>
-        <g class="pin" onclick="gotoPark('虎頭山公園')">
-          <circle cx="310" cy="116" r="17" fill="#3E8E5A"/>
-          <text x="310" y="122" font-size="15" font-weight="700" text-anchor="middle" fill="#fff" id="wcnt-虎頭山公園">0</text>
-          <text x="310" y="152" font-size="11.5" font-weight="700" text-anchor="middle" fill="#23301F">虎頭山公園</text>
-        </g>
-      </svg>
+
+    <!-- 右：揪團清單 -->
+    <div style="display:flex;flex-direction:column;overflow:hidden;padding:12px">
+      <div class="section-t" style="margin:0 0 12px">🐾 揪團清單</div>
+      <div id="walk-groups" style="flex:1;overflow-y:auto"></div>
     </div>
-    <p class="hint" style="margin-top:6px">圓圈數字＝該公園目前的揪團數</p>
-    <div id="walk-groups"></div>
-    <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="openWalkForm()">🐾 我要發起揪團</button>
   </section>
 
   <!-- 地圖/公園 -->

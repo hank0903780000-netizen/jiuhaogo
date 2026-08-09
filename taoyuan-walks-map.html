@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>揪好GO 地圖導航</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Noto Sans TC", system-ui, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      height: 100vh;
+      gap: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    .sidebar {
+      background: white;
+      padding: 16px;
+      overflow-y: auto;
+      border-left: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -2px 0 8px rgba(0,0,0,.05);
+    }
+    .sidebar h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #2d9e5f;
+      border-bottom: 2px solid #e0e5dc;
+      padding-bottom: 10px;
+    }
+    .search-box {
+      margin-bottom: 16px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .search-box input:focus {
+      outline: none;
+      border-color: #2d9e5f;
+      box-shadow: 0 0 0 3px rgba(45,158,95,0.1);
+    }
+    .park-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+    .park-item {
+      padding: 12px;
+      background: #f8fafb;
+      border-radius: 8px;
+      border-left: 3px solid #2d9e5f;
+      cursor: pointer;
+      transition: all .15s;
+      font-size: 13px;
+    }
+    .park-item:hover {
+      background: #eff5f1;
+      transform: translateX(4px);
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .park-item.active {
+      background: linear-gradient(135deg, #d8ede0, #c7e8d5);
+      border-left-color: #1e6e42;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(45,158,95,.2);
+    }
+    .park-name {
+      font-weight: 600;
+      color: #1c1c1e;
+      margin-bottom: 4px;
+    }
+    .park-info {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .park-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .btn-small {
+      flex: 1;
+      padding: 6px 8px;
+      background: #2d9e5f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+    }
+    .btn-small:hover {
+      background: #1e6e42;
+      box-shadow: 0 2px 6px rgba(45,158,95,.3);
+    }
+    .btn-small.secondary {
+      background: #e0e5dc;
+      color: #333;
+    }
+    .btn-small.secondary:hover {
+      background: #d0d5cc;
+    }
+    .walks-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e0e5dc;
+    }
+    .walk-item {
+      padding: 10px;
+      background: #f0f5f2;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      border-left: 2px solid #4a8cc9;
+    }
+    .walk-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: #1c1c1e;
+    }
+    .walk-time {
+      color: #666;
+      font-size: 11px;
+    }
+    .walk-people {
+      color: #2d9e5f;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .rating-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e0e5dc;
+    }
+    .rating-box {
+      background: #fff9e6;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border-left: 2px solid #f5a623;
+    }
+    .rating-header {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .rating-text {
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+    }
+    .rating-form {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+    }
+    .rating-form input {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .rating-form button {
+      padding: 6px 10px;
+      background: #f5a623;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .rating-form button:hover {
+      background: #e69511;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    .stat-box {
+      background: #e8f5eb;
+      padding: 8px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2d9e5f;
+    }
+    .stat-label {
+      color: #666;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="map"></div>
+    <div class="sidebar">
+      <h2>🗺️ 揪團地圖</h2>
+
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-number">3</div>
+          <div class="stat-label">個公園</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number" id="totalWalks">4</div>
+          <div class="stat-label">個揪團</div>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="搜尋公園名稱...">
+      </div>
+
+      <ul class="park-list" id="parkList"></ul>
+
+      <div class="walks-section">
+        <h3 style="font-size: 14px; margin-bottom: 8px;">🐾 該公園的揪團</h3>
+        <div id="walksList" style="font-size: 12px; color: #666;">點擊公園查看揪團</div>
+      </div>
+
+      <div class="rating-section">
+        <div class="rating-header">⭐ 公園評分</div>
+        <div id="ratingsList"></div>
+        <div class="rating-form">
+          <input type="text" id="ratingText" placeholder="分享你的感受...">
+          <button onclick="submitRating()">送出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.umd.js"></script>
+  <script>
+    // 公園數據
+    const parks = [
+      {
+        id: 'p1',
+        name: '風禾公園',
+        lat: 24.9937,
+        lng: 121.2955,
+        desc: '大草皮、兒童遊樂設施、寵物友善',
+        walks: [
+          { id: 'w1', title: '大草皮集合', time: '今天 17:30', people: 6, type: '🚶 溫和' },
+          { id: 'w4', title: '柯基小短腿團', time: '明天 18:00', people: 3, type: '🐾 一般' }
+        ],
+        rating: 4.8
+      },
+      {
+        id: 'p2',
+        name: '玉山公園',
+        lat: 24.9945,
+        lng: 121.3265,
+        desc: '健身設施、兒童遊樂區、狗狗友善',
+        walks: [
+          { id: 'w2', title: '夜間散步團', time: '今天 19:00', people: 4, type: '🐾 一般' }
+        ],
+        rating: 4.5
+      },
+      {
+        id: 'p3',
+        name: '虎頭山公園',
+        lat: 25.0174,
+        lng: 121.3185,
+        desc: '登山步道、觀景台、毛孩友善',
+        walks: [
+          { id: 'w3', title: '週六晨走團', time: '週六 07:00', people: 9, type: '🏃 活力' }
+        ],
+        rating: 4.9
+      }
+    ];
+
+    // 初始化地圖
+    const map = L.map('map').setView([24.9937, 121.2955], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let currentPark = null;
+    let routeControl = null;
+
+    // 添加公園標記
+    parks.forEach(park => {
+      const marker = L.marker([park.lat, park.lng], {
+        title: park.name
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <strong>${park.name}</strong><br>
+        ⭐ ${park.rating}/5.0<br>
+        ${park.desc}
+      `);
+
+      marker.on('click', () => {
+        selectPark(park);
+      });
+    });
+
+    // 選擇公園
+    function selectPark(park) {
+      currentPark = park;
+
+      // 更新地圖視圖
+      map.setView([park.lat, park.lng], 16);
+
+      // 更新側邊欄
+      document.querySelectorAll('.park-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      document.querySelector(`[data-park="${park.id}"]`)?.classList.add('active');
+
+      // 更新揪團列表
+      const walksList = document.getElementById('walksList');
+      if (park.walks.length === 0) {
+        walksList.innerHTML = '<p style="color:#999;font-style:italic">目前沒有揪團，快去發起吧！</p>';
+      } else {
+        walksList.innerHTML = park.walks.map(walk => `
+          <div class="walk-item">
+            <div class="walk-title">${walk.title}</div>
+            <div class="walk-time">⏰ ${walk.time}</div>
+            <div class="walk-people">👥 ${walk.people} 隻狗報名</div>
+          </div>
+        `).join('');
+      }
+
+      // 更新評論
+      renderRatings(park);
+    }
+
+    // 渲染評論
+    function renderRatings(park) {
+      const ratings = JSON.parse(localStorage.getItem(`ratings_${park.id}`) || '[]');
+      const ratingsList = document.getElementById('ratingsList');
+
+      if (ratings.length === 0) {
+        ratingsList.innerHTML = '<p style="font-size:11px;color:#999">還沒有評論，來分享你的感受吧！</p>';
+      } else {
+        ratingsList.innerHTML = ratings.map(r => `
+          <div style="padding:6px;background:#f9f9f9;border-radius:4px;margin-bottom:6px;font-size:11px;">
+            <div style="color:#666">${r.text}</div>
+            <div style="color:#999;font-size:10px;margin-top:2px">${new Date(r.time).toLocaleDateString('zh-TW')}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 送出評論
+    function submitRating() {
+      if (!currentPark) {
+        alert('請先選擇公園');
+        return;
+      }
+
+      const text = document.getElementById('ratingText').value.trim();
+      if (!text) {
+        alert('請輸入評論');
+        return;
+      }
+
+      const ratings = JSON.parse(localStorage.getItem(`ratings_${currentPark.id}`) || '[]');
+      ratings.unshift({ text, time: new Date().toISOString() });
+      if (ratings.length > 20) ratings.pop();
+      localStorage.setItem(`ratings_${currentPark.id}`, JSON.stringify(ratings));
+
+      document.getElementById('ratingText').value = '';
+      renderRatings(currentPark);
+    }
+
+    // 路線規劃
+    function planRoute(park) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          if (routeControl) map.removeControl(routeControl);
+
+          routeControl = L.Routing.control({
+            waypoints: [
+              L.latLng(pos.coords.latitude, pos.coords.longitude),
+              L.latLng(park.lat, park.lng)
+            ],
+            routeWhileDragging: true,
+            lineOptions: {
+              styles: [{ color: '#2d9e5f', opacity: 0.8, weight: 5 }]
+            }
+          }).addTo(map);
+        });
+      }
+    }
+
+    // 渲染公園列表
+    function renderParks() {
+      const list = document.getElementById('parkList');
+      list.innerHTML = parks.map(park => `
+        <li class="park-item" data-park="${park.id}" onclick="selectPark(parks.find(p=>p.id==='${park.id}'))">
+          <div class="park-name">📍 ${park.name}</div>
+          <div class="park-info">⭐ ${park.rating}/5.0 • ${park.walks.length} 個揪團</div>
+          <div class="park-buttons">
+            <button class="btn-small" onclick="event.stopPropagation(); selectPark(parks.find(p=>p.id==='${park.id}'))">📍 看地圖</button>
+            <button class="btn-small secondary" onclick="event.stopPropagation(); planRoute(parks.find(p=>p.id==='${park.id}'))">🛣️ 導航</button>
+          </div>
+        </li>
+      `).join('');
+    }
+
+    // 搜尋功能
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      document.querySelectorAll('.park-item').forEach(item => {
+        const parkId = item.dataset.park;
+        const park = parks.find(p => p.id === parkId);
+        const match = park.name.toLowerCase().includes(query);
+        item.style.display = match ? 'block' : 'none';
+      });
+    });
+
+    // 初始化
+    renderParks();
+    selectPark(parks[0]);
+  </script>
+</body>
+</html>

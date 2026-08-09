@@ -1,0 +1,24 @@
+{
+  "parks": [
+    {"name": "風禾公園", "district": "桃園區", "lat": 24.9937, "lng": 121.2955, "rating": "5", "type": "大型公園", "features": "大草皮、兒童遊樂設施、寵物友善"},
+    {"name": "虎頭山公園", "district": "桃園區", "lat": 25.0174, "lng": 121.3185, "rating": "5", "type": "風景公園", "features": "登山步道、觀景台、毛孩友善"},
+    {"name": "玉山公園", "district": "桃園區", "lat": 24.9945, "lng": 121.3265, "rating": "4", "type": "都市公園", "features": "健身設施、兒童遊樂區、狗狗友善"},
+    {"name": "大有梯田公園", "district": "桃園區", "lat": 24.9854, "lng": 121.3112, "rating": "4", "type": "景觀公園", "features": "梯田景觀、散步路線、寵物可進入"},
+    {"name": "南亞公園", "district": "南投區", "lat": 24.9765, "lng": 121.3145, "rating": "4", "type": "社區公園", "features": "籃球場、散步道、毛孩區"},
+    {"name": "民光東路公園", "district": "桃園區", "lat": 25.0065, "lng": 121.3095, "rating": "3", "type": "鄰里公園", "features": "兒童遊樂設施、休閒區"},
+    {"name": "高雅公園", "district": "桃園區", "lat": 24.9945, "lng": 121.3065, "rating": "4", "type": "都市公園", "features": "健身設施、散步道、寵物友善"},
+    {"name": "中山公園", "district": "中壢區", "lat": 24.9583, "lng": 121.2196, "rating": "4", "type": "都市公園", "features": "古蹟、湖泊、兒童遊樂區"},
+    {"name": "龍岡公園", "district": "中壢區", "lat": 24.9595, "lng": 121.2265, "rating": "5", "type": "大型公園", "features": "大草皮、散步道、毛孩友善"},
+    {"name": "石牌公園", "district": "中壢區", "lat": 24.9512, "lng": 121.2142, "rating": "4", "type": "都市公園", "features": "兒童遊樂設施、籃球場"},
+    {"name": "雲豐公園", "district": "平鎮區", "lat": 24.9265, "lng": 121.1892, "rating": "4", "type": "運動公園", "features": "籃球場、排球場、寵物可進入"},
+    {"name": "新町文創園區", "district": "八德區", "lat": 24.9365, "lng": 121.2965, "rating": "4", "type": "文創園區", "features": "文創展覽、咖啡館、散步路線"},
+    {"name": "大溪老街公園", "district": "大溪區", "lat": 24.8795, "lng": 121.2865, "rating": "4", "type": "景觀公園", "features": "古蹟、河景、散步道"},
+    {"name": "虎頭山生態公園", "district": "蘆竹區", "lat": 25.0845, "lng": 121.3195, "rating": "5", "type": "生態公園", "features": "自然步道、賞鳥區、毛孩區"},
+    {"name": "南寮濱海公園", "district": "新竹市", "lat": 25.0765, "lng": 120.8592, "rating": "4", "type": "濱海公園", "features": "濱海風景、自行車道、散步區"},
+    {"name": "埤塘生態公園", "district": "楊梅區", "lat": 24.8592, "lng": 121.1745, "rating": "4", "type": "生態公園", "features": "水生植物、賞鳥、自然步道"},
+    {"name": "蓮花季節步道", "district": "觀音區", "lat": 25.1092, "lng": 120.9265, "rating": "4", "type": "季節景點", "features": "蓮花觀賞、自行車道、散步區"},
+    {"name": "石門水庫環湖步道", "district": "龍潭區", "lat": 24.8365, "lng": 121.0745, "rating": "5", "type": "風景區", "features": "湖景、登山步道、毛孩友善"},
+    {"name": "慈湖親水公園", "district": "大溪區", "lat": 24.8612, "lng": 121.2456, "rating": "4", "type": "親水公園", "features": "湖景、散步道、兒童設施"},
+    {"name": "東眼山國家森林遊樂區", "district": "復興區", "lat": 24.7845, "lng": 121.1562, "rating": "5", "type": "森林園區", "features": "登山步道、觀景台、自然保護區"}
+  ]
+}

@@ -1,0 +1,22 @@
+#real-map{height:260px;width:100%;border-radius:18px;background:#e9edf0;isolation:isolate;z-index:0}
+.leaflet-container{font-family:inherit;font-size:12px}
+.leaflet-control-attribution{font-size:10px!important}
+.leaflet-container button{font-size:12px;min-height:36px}
+.filter-row{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;margin:20px 0 12px}.filter-row label:first-child{grid-column:1;grid-row:1}.filter-row label[for=walk-filter]{grid-column:2;grid-row:1}.filter-row select{grid-row:2;font-size:13px;padding:10px;margin:4px 0 0}
+.activity-card{margin-bottom:12px}.activity-time{font-size:14px;font-weight:700;margin:10px 0 4px}.activity-card p{margin-top:6px;margin-bottom:6px}.cancelled{opacity:.65}.walk-top{gap:10px;align-items:flex-start}.walk-top b{min-width:0;overflow-wrap:anywhere}.walk-when{white-space:nowrap;flex-shrink:0}
+.action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.external-link{color:#c92d52;font-size:13px;padding:10px 0}.verification{font-size:10px;background:#fff5de;color:#855b10;padding:3px 7px;border-radius:7px;white-space:nowrap}
+.empty-state{padding:28px 16px;text-align:center;color:var(--ink-soft)}.empty-state>span{font-size:32px}.empty-state h2{font-size:18px;color:var(--ink);margin:12px 0 5px}.empty-state p{font-size:13px;margin:0 0 16px}.empty-state button{font-size:13px}
+.pet-copy{flex:1;min-width:0}.pet-copy p{margin:3px 0;overflow-wrap:anywhere}.pet-placeholder{font-size:70px;display:flex;align-items:center;justify-content:center;height:100%;width:100%;background:#fff0f3}.pa .pet-placeholder,.dog-photo .pet-placeholder{font-size:30px}
+.post-head .pa{overflow:hidden;flex-shrink:0}.post-head .pa img{width:100%;height:100%;object-fit:cover}.post-head>div{flex:1;min-width:0}.post-menu{padding:0 8px}.post-body p{overflow-wrap:anywhere}.comment-button{font-size:13px!important}.pact[aria-pressed=true]{color:#fc5069}.comment{border-bottom:1px solid var(--line);padding:12px 0}.comment p{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}.comment small{color:var(--ink-soft)}.comment-list{max-height:40vh;overflow-y:auto}
+.notification-button{position:relative;min-height:36px;width:30px;padding:0;font-size:24px;color:#737887;flex-shrink:0}.notification-button span{position:absolute;right:-5px;top:-3px;background:#fc5069;color:white;font-size:10px;border-radius:12px;padding:0 4px}.notification-button span:empty{display:none}.apphead{gap:6px;padding-left:18px;padding-right:18px}.apphead .loc{margin-left:auto;font-size:10px}.apphead .brand{font-size:22px}
+.account-card{display:flex;align-items:center;justify-content:space-between;padding:16px 0;gap:8px}.account-card b{display:block}.account-card span{font-size:12px;color:var(--ink-soft)}.mode-info{padding:14px;background:#fff5f7;border-radius:14px}.mode-info b{font-size:13px}.mode-info p{font-size:12px;margin:4px 0 8px;color:#737887}.mode-info button{padding:5px 12px;font-size:12px;min-height:36px;border:1px solid #f3ccd5;margin-right:6px;background:white}
+.drawer-close{width:100%;margin-top:18px}.sheet p{overflow-wrap:anywhere}.sheet h4{margin:20px 0 8px}.sheet .btn-sm{margin:4px}.check-row{display:flex;align-items:center;gap:8px;margin:12px 0}.check-row input{width:20px;height:20px;box-shadow:none;margin:0}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}#deck-more{padding:0 6px;min-height:20px;color:#737887}#load-error{padding:14px;background:#fff5de;border-radius:12px;font-size:13px}
+.match-stack{height:clamp(250px,calc(100dvh - 410px),550px)}.match-empty{height:auto;min-height:320px}
+.mode-info button:hover{background:#ffe6ed}#stories-row{align-items:center}#stories-row .hint{white-space:nowrap}.mcard .mphoto .pet-placeholder{font-size:120px}
+@media(max-width:360px){.apphead .loc{font-size:9px}.apphead .brand{font-size:19px}.apphead .brand .icon{width:23px}.activity-card .walk-top{flex-direction:column}}
+.park-tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.park-badge{display:inline-block;border-radius:20px;padding:5px 9px;font-size:12px;font-weight:700}
+.park-badge.pet{color:#11644f;background:#e4f5ee}
+.park-badge.large{color:#985216;background:#fff0df}
+.park-legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:#737582}
+.park-map-label{font-family:inherit;font-weight:600;font-size:11px;box-shadow:0 2px 6px #0001;border:0;border-radius:7px}

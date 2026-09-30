@@ -34,7 +34,7 @@ function switchTab(name){
 }
 async function act(type,data={},message='已儲存'){
   if(!repo||!state)throw new Error('資料尚未載入，請重試');
-  if(mutating)throw new Error('正在儲存，請稍候');mutating=true;stateRevision++;
+  if(mutating)throw new Error('正在儲存，請稍候');mutating=true;stateRevision++;modeRequest++;
   try{state=await repo.dispatch({type,data});render();if(message)toast(message);}finally{mutating=false;}
 }
 function modeLabel(){return mode==='demo'?'示範體驗':mode==='local'?'本機模式':'雲端模式';}
@@ -49,7 +49,7 @@ function render(){
 async function refresh(){if(refreshBusy||!repo||mutating)return;refreshBusy=true;const selected=repo,revision=stateRevision;try{const loaded=await selected.snapshot();if(repo===selected&&revision===stateRevision){state=loaded;render();$('load-error').hidden=true;}}finally{refreshBusy=false;}}
 async function changeMode(next){
   if(!['demo','local','cloud'].includes(next))return;
-  if(mutating)throw new Error('請等儲存完成後再切換模式');
+  if(mutating||swipeBusy)throw new Error('請等目前操作完成後再切換模式');
   let selected;const request=++modeRequest;
   if(next==='cloud'){
     if(!client){drawer('<h3>雲端連線尚未設定</h3><p>目前可使用本機完整版。管理者設定 Supabase 專案後，即可登入同步資料。</p>');return;}

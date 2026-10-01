@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "node -e \"require('node:fs').cpSync('app','public/app',{recursive:true})\"",
+  "outputDirectory": "public",
+  "redirects": [{"source":"/","destination":"/app/","permanent":false}],
+  "headers": [{"source":"/app/sw.js","headers":[{"key":"Cache-Control","value":"no-cache"}]}]
+}

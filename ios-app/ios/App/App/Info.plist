@@ -28,6 +28,8 @@
 	<string>發布毛孩照片時需要從相簿選擇照片</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>拍完照後需要儲存到你的相簿</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>使用地圖時取得目前位置，協助尋找附近的公園與活動</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

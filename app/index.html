@@ -350,14 +350,21 @@ button.cat-entry:hover{box-shadow:var(--shadow-md); border-color:#D0D4DC}
     </div>
   </section>
 
-  <!-- 地圖/公園 -->
-  <section class="page" id="page-map"><div class="page-intro"><span class="demo-label">示範體驗</span><h1>下一站，去公園</h1><p>找一片草地，留一點時間給彼此。</p></div>
-    <label class="sr-only" for="park-search">搜尋公園、地址或行政區</label><input id="park-search" type="search" placeholder="搜尋公園、地址或行政區">
-    <div class="filter-row"><label for="park-category">想找哪一種？</label><select id="park-category"><option value="priority">先看重點公園</option><option value="pet">🐾 設有寵物專區</option><option value="large">🌳 大型公園</option><option value="all">全部公園名錄</option></select></div>
-    <div class="filter-row"><label for="park-district">行政區</label><select id="park-district"><option value="">桃園全市</option></select><label for="park-location">位置資料</label><select id="park-location"><option value="">全部名錄</option><option value="located">有官方座標</option><option value="pending">座標待補</option></select></div>
+  <!-- 附近探索 -->
+  <section class="page" id="page-map"><div class="page-intro"><span class="demo-label">示範體驗</span><h1>毛孩附近去哪裡</h1><p>公園、醫療與日常採買，一次找齊。</p></div>
+    <div class="place-map-shell"><div id="places-map" aria-label="桃園寵物生活地圖"></div><button class="map-locate" data-action="locatePlaces" aria-label="在地圖顯示我的位置">◎ 我的附近</button></div>
+    <div class="place-categories" role="group" aria-label="地點分類">
+      <button class="place-category on" data-place-category="all"><span>附近</span><b id="count-all">0</b></button>
+      <button class="place-category" data-place-category="pet"><span>🐾 寵物專區</span><b id="count-pet">0</b></button>
+      <button class="place-category" data-place-category="park"><span>🌳 公園</span><b id="count-park">0</b></button>
+      <button class="place-category" data-place-category="vet"><span>✚ 醫院</span><b id="count-vet">0</b></button>
+      <button class="place-category" data-place-category="store"><span>⌂ 門市</span><b id="count-store">0</b></button>
+    </div>
+    <label class="sr-only" for="park-search">搜尋名稱、地址或行政區</label><input id="park-search" type="search" placeholder="搜尋名稱、地址或行政區">
+    <div class="explore-filters"><label for="park-district">行政區</label><select id="park-district"><option value="">桃園全市</option></select><label for="place-sort">排序</label><select id="place-sort"><option value="recommended">推薦優先</option><option value="name">名稱排序</option></select></div>
     <p class="hint" id="park-result" aria-live="polite"></p>
     <div id="park-list"></div>
-    <p class="hint">全市13區公開名錄整理，仍待補齊完整權管清冊。座標來自官方公布，未經現地勘查；寵物規定與開放狀態請查官方公告。</p>
+    <p class="hint" id="places-data-note">資料來自桃園市政府與政府資料開放平臺；營業、開放狀態與寵物規範請以現場及官方最新公告為準。</p>
   </section>
 
   <!-- 配對交友 -->
@@ -432,7 +439,7 @@ button.cat-entry:hover{box-shadow:var(--shadow-md); border-color:#D0D4DC}
 <nav class="tabbar" aria-label="主要導覽"><button class="tab on" id="tab-match" onclick="switchTab('match')" aria-current="page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M12 10c-3 0-3 3-5 5-2 3 0 6 3 5l2-1 2 1c3 1 5-2 3-5-2-2-2-5-5-5Z"/><ellipse cx="5" cy="9" rx="2" ry="3"/><ellipse cx="10" cy="5" rx="2" ry="3"/><ellipse cx="16" cy="5" rx="2" ry="3"/><ellipse cx="21" cy="10" rx="1.5" ry="2.5"/></svg>狗友</button>
 <button class="tab" id="tab-walk" onclick="switchTab('walk')" aria-current="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 3 5v3"/></svg>揪團</button>
 <button class="tab" id="tab-home" onclick="switchTab('home')" aria-current="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>動態</button>
-<button class="tab" id="tab-map" onclick="switchTab('map')" aria-current="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2-6 8h3l-5 7h7v5h2v-5h7l-5-7h3Z"/></svg>公園</button>
+<button class="tab" id="tab-map" onclick="switchTab('map')" aria-current="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z M9 3v15M15 6v15"/></svg>附近</button>
 <button class="tab" id="tab-dog" onclick="switchTab('dog')" aria-current="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3Z"/></svg>我的</button></nav>
 
 <!-- 發文 -->

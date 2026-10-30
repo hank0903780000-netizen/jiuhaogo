@@ -363,6 +363,7 @@ button.cat-entry:hover{box-shadow:var(--shadow-md); border-color:#D0D4DC}
     </div>
     <label class="sr-only" for="park-search">搜尋名稱、地址或行政區</label><input id="park-search" type="search" placeholder="搜尋名稱、地址或行政區">
     <div class="explore-filters"><label for="park-district">行政區</label><select id="park-district"><option value="">桃園全市</option></select><label for="place-sort">排序</label><select id="place-sort"><option value="recommended">推薦優先</option><option value="distance">離我最近</option><option value="name">名稱排序</option></select></div>
+    <div id="hospital-service-wrap" hidden><label for="hospital-service">醫院需求</label><select id="hospital-service"><option value="">全部動物醫院</option><option value="emergency24">24 小時急診</option><option value="nightEmergency">夜間急診</option><option value="exotic">特殊動物</option><option value="appointment">可預約</option><option value="callable">可直接撥打</option></select><p class="hint">急診與特殊動物僅列已核對資料；出發前仍請先電話確認值班與收治物種。</p></div>
     <p class="hint" id="park-result" aria-live="polite"></p>
     <div id="park-list"></div>
     <p class="hint" id="places-data-note">資料來自桃園市政府與政府資料開放平臺；營業、開放狀態與寵物規範請以現場及官方最新公告為準。</p>

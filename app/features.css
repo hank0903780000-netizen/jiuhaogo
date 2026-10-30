@@ -15,6 +15,7 @@
 .rating-row{display:flex;gap:5px;margin:8px 0}.rating-row button{font-size:22px;padding:2px;color:#d7d9dd}.rating-row button.on{color:#f5a623}
 .place-photo{width:100%;max-height:240px;object-fit:cover;border-radius:14px;margin:8px 0}
 .hours-row{display:flex;align-items:center;gap:7px;font-size:12px;margin:7px 0;color:var(--ink-soft)}.hours-row strong{color:var(--ink)}.hours-row a{color:var(--green-deep);font-weight:700;text-decoration:none}
+.service-tags{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.service-tag{font-size:11px;font-weight:700;border-radius:999px;padding:4px 8px;background:#fee8e5;color:#a33d35}.service-tag.exotic{background:#eee9fb;color:#6747a6}.service-tag.appointment{background:#ebf2f8;color:#356d9e}.service-unknown{font-size:11px;color:var(--ink-soft)}
 .place-popup p{margin:5px 0}.place-popup a{display:inline-block;margin-top:6px;color:#fff;background:var(--green);padding:7px 10px;border-radius:8px;text-decoration:none;font-weight:700}
 .leaflet-container{font-family:inherit;font-size:12px}
 .leaflet-control-attribution{font-size:10px!important}

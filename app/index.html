@@ -355,13 +355,14 @@ button.cat-entry:hover{box-shadow:var(--shadow-md); border-color:#D0D4DC}
     <div class="place-map-shell"><div id="places-map" aria-label="桃園寵物生活地圖"></div><button class="map-locate" data-action="locatePlaces" aria-label="在地圖顯示我的位置">◎ 我的附近</button></div>
     <div class="place-categories" role="group" aria-label="地點分類">
       <button class="place-category on" data-place-category="all"><span>附近</span><b id="count-all">0</b></button>
+      <button class="place-category" data-place-category="favorite"><span>♥ 收藏</span><b id="count-favorite">0</b></button>
       <button class="place-category" data-place-category="pet"><span>🐾 寵物專區</span><b id="count-pet">0</b></button>
       <button class="place-category" data-place-category="park"><span>🌳 公園</span><b id="count-park">0</b></button>
       <button class="place-category" data-place-category="vet"><span>✚ 醫院</span><b id="count-vet">0</b></button>
       <button class="place-category" data-place-category="store"><span>⌂ 門市</span><b id="count-store">0</b></button>
     </div>
     <label class="sr-only" for="park-search">搜尋名稱、地址或行政區</label><input id="park-search" type="search" placeholder="搜尋名稱、地址或行政區">
-    <div class="explore-filters"><label for="park-district">行政區</label><select id="park-district"><option value="">桃園全市</option></select><label for="place-sort">排序</label><select id="place-sort"><option value="recommended">推薦優先</option><option value="name">名稱排序</option></select></div>
+    <div class="explore-filters"><label for="park-district">行政區</label><select id="park-district"><option value="">桃園全市</option></select><label for="place-sort">排序</label><select id="place-sort"><option value="recommended">推薦優先</option><option value="distance">離我最近</option><option value="name">名稱排序</option></select></div>
     <p class="hint" id="park-result" aria-live="polite"></p>
     <div id="park-list"></div>
     <p class="hint" id="places-data-note">資料來自桃園市政府與政府資料開放平臺；營業、開放狀態與寵物規範請以現場及官方最新公告為準。</p>

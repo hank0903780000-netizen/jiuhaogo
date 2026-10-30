@@ -1,6 +1,6 @@
 import {uuid,text,safePhoto,blocked,membersOf,validateWalk,emptyState} from './domain.mjs';
 import {LocalRepository,CloudRepository,cloudReady} from './repository.mjs';
-import {ParkMap} from './maps.mjs';
+import {ParkMap,PlacesMap} from './maps.mjs';
 import {parseBackup} from './backup.mjs';
 
 const $=id=>document.getElementById(id);
@@ -12,15 +12,21 @@ const photo=p=>p?.photo&&safePhoto(p.photo)?`<img src="${esc(p.photo)}" alt="${e
 const fmt=d=>new Intl.DateTimeFormat('zh-TW',{month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(d));
 const day=d=>{const a=new Date(d);return [a.getFullYear(),String(a.getMonth()+1).padStart(2,'0'),String(a.getDate()).padStart(2,'0')].join('-');};
 const config=window.JHG_CONFIG||{};
-let client=null,repo=null,state=null,parks=[],map=null,current='match',mode=localStorage.getItem('jhg_mode')||'demo';
+let client=null,repo=null,state=null,parks=[],places=[],map=null,placesMap=null,current='match',mode=localStorage.getItem('jhg_mode')||'demo';
 let parkFilter='',walkFilter='upcoming',parkSearch='',obPhoto='',composePhoto='',editingPetId=null,editingWalkId=null;
-let parkDistrict='',parkLocation='',parkCategory='priority',parkLimit=30;
+let parkDistrict='',parkCategory='all',placeSort='recommended',hospitalService='',parkLimit=30;
 let previousTarget=null,swipeBusy=false,toastTimer,openPostId=null,refreshBusy=false,mutating=false,stateRevision=0,modeRequest=0;
+let userCoords=null,activePlaceId=null;
+let placePrefs=(()=>{try{return JSON.parse(localStorage.getItem('jhg_place_prefs')||'{}')}catch{return {}}})();
 const me=()=>repo?.actor;
 const owner=id=>state?.profiles.find(p=>p.id===id)?.display_name||'毛孩朋友';
 const minePets=()=>state?.pets.filter(p=>p.owner_id===me())||[];
 const visible=id=>!blocked(state,me(),id);
 const parkName=id=>parks.find(p=>p.id===id)?.name||'未指定公園';
+const savePlacePrefs=()=>localStorage.setItem('jhg_place_prefs',JSON.stringify(placePrefs));
+const pref=id=>{const p=placePrefs[id]||(placePrefs[id]={favorite:false,visitedAt:'',rating:0,review:'',reports:[]});if(!Array.isArray(p.reports))p.reports=[];return p;};
+const distanceKm=p=>{if(!userCoords||!Number.isFinite(p.lat)||!Number.isFinite(p.lng))return null;const r=Math.PI/180,dLat=(p.lat-userCoords.latitude)*r,dLng=(p.lng-userCoords.longitude)*r,a=Math.sin(dLat/2)**2+Math.cos(userCoords.latitude*r)*Math.cos(p.lat*r)*Math.sin(dLng/2)**2;return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));};
+const distanceLabel=p=>{const d=distanceKm(p);return d===null?'':d<1?`${Math.round(d*1000)} 公尺`:`${d.toFixed(1)} 公里`;};
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3600);}
 function errorMessage(e){if(/fetch|network|Failed/i.test(e.message))return '連線失敗，資料尚未儲存。請檢查網路後再試。';return e.message||'操作失敗，請重試';}
 async function run(fn){try{return await fn();}catch(e){console.error(e);toast(errorMessage(e));}}
@@ -30,7 +36,7 @@ function drawer(html){$('profile-body').innerHTML=html+button('關閉','closeDra
 function closePop(){$('mpop').classList.remove('show');}
 function switchTab(name){
   current=name;for(const n of ['home','walk','map','match','dog','serve']){$('page-'+n).classList.toggle('active',n===name);const t=$('tab-'+n);if(t){const selected=n===name||(name==='serve'&&n==='dog');t.classList.toggle('on',selected);t.setAttribute('aria-current',selected?'page':'false');}}
-  $('screen').scrollTop=0;if(name==='walk')map?.show();
+  $('screen').scrollTop=0;if(name==='walk')map?.show();if(name==='map')placesMap?.show();
 }
 async function act(type,data={},message='已儲存'){
   if(!repo||!state)throw new Error('資料尚未載入，請重試');
@@ -95,12 +101,27 @@ async function createWalk(){
   validateWalk(data);await act('saveWalk',data,mode==='cloud'?'活動已同步':'活動已儲存於'+modeLabel());closeOv('ov-walk');walkFilter='hosted';$('walk-filter').value='hosted';parkFilter='';$('park-filter').value='';renderWalks();switchTab('walk');
 }
 function gotoPark(id){parkFilter=id;$('park-filter').value=id;walkFilter='upcoming';$('walk-filter').value=walkFilter;renderWalks();switchTab('walk');map?.show(id);}
+function updateFavoriteCount(){$('count-favorite').textContent=places.filter(p=>pref(p.id).favorite).length;}
+const hoursHtml=p=>p.category==='vet'||p.category==='store'?`<p class="hours-row"><span aria-hidden="true">◷</span><strong>營業時間</strong><a href="${esc(p.mapUrl)}" target="_blank" rel="noopener">查最新營業時間 ↗</a></p>`:`<p class="hours-row"><span aria-hidden="true">◷</span><strong>開放時間</strong><span>依現場及官方公告</span></p>`;
+const vetServicesHtml=p=>p.category!=='vet'?'':`<div class="service-tags">${p.emergency24?'<span class="service-tag">24 小時急診</span>':p.nightEmergency?'<span class="service-tag">夜間急診</span>':''}${p.exotic?'<span class="service-tag exotic">特殊動物</span>':''}${p.appointment==='yes'?'<span class="service-tag appointment">可預約</span>':''}${!p.serviceVerified?'<span class="service-unknown">服務項目請電話確認</span>':''}</div>`;
+function toggleFavorite(id){const p=pref(id);p.favorite=!p.favorite;savePlacePrefs();updateFavoriteCount();renderParks();toast(p.favorite?'已加入收藏':'已取消收藏');}
+function placeDetail(id){
+  const p=places.find(p=>p.id===id);if(!p)return;activePlaceId=id;const x=pref(id),d=distanceLabel(p),kind={park:'公園',pet:'寵物專區',vet:'動物醫院',store:'寵物門市'}[p.category];
+  const categoryNote=p.category==='vet'?'官方名冊未提供科別、急診與營業時間，前往前請先電話確認。':p.category==='store'?'此清冊為合法特定寵物業候選，商品、服務與營業時間請向店家確認。':p.category==='park'?'入園請依現場告示使用牽繩、清理排泄物；個別區域規定可能不同。':'寵物專區設施與開放狀態可能調整，請以現場公告為準。';
+  drawer(`<h3>${esc(p.name)}</h3>${x.photo?`<img class="place-photo" src="${esc(x.photo)}" alt="${esc(p.name)}的到訪照片">`:''}<p>${esc([p.district,kind,d].filter(Boolean).join(' · '))}</p><p>${esc(p.address||'地址或定位待官方補充')}</p>${hoursHtml(p)}${vetServicesHtml(p)}<p class="hint">${esc(p.detail||'')}</p><p class="hint">${esc(categoryNote)}</p><div class="place-history">${x.visitedAt?`<span>✓ 已到訪 ${esc(new Date(x.visitedAt).toLocaleDateString('zh-TW'))}</span>`:''}${x.rating?`<span>★ 你的評分 ${x.rating}/5</span>`:''}</div><div class="action-row"><a class="btn-green btn-sm" href="${esc(p.mapUrl)}" target="_blank" rel="noopener">開始導航</a>${p.phone&&p.phone!=='－'?`<a class="btn-ghost btn-sm" href="tel:${esc(p.phone)}">直接撥打 ${esc(p.phone)}</a>`:''}${button(x.favorite?'取消收藏':'加入收藏','favorite',id)}${button(x.visitedAt?'更新到訪':'標記到訪','visitPlace',id)}</div><h4>我的評分、照片與筆記</h4><div class="rating-row" role="group" aria-label="評分">${[1,2,3,4,5].map(n=>`<button class="${n<=x.rating?'on':''}" data-action="ratePlace" data-id="${id}" data-rating="${n}" aria-label="${n} 星">★</button>`).join('')}</div><input id="place-photo-input" type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="pickPlacePhoto(this)">${button(x.photo?'更換到訪照片':'新增到訪照片','choosePlacePhoto',id)}<textarea id="place-review" maxlength="500" placeholder="記下環境、設施或服務體驗">${esc(x.review||'')}</textarea>${button('儲存筆記','savePlaceReview',id,'btn-green')}<h4>資料有誤？</h4><textarea id="place-report" maxlength="500" placeholder="例如：已歇業、地址錯誤、電話變更或公園暫停開放"></textarea>${button('送出本機回報','reportPlace',id)}<p class="hint">回報會先保存在此裝置，待雲端後台啟用後再送交管理者。</p><a class="external-link" href="${esc(p.serviceSourceUrl||p.sourceUrl)}" target="_blank" rel="noopener">查看服務資料來源 ↗</a>`);
+}
+function visitPlace(id){pref(id).visitedAt=new Date().toISOString();savePlacePrefs();placeDetail(id);toast('已記錄到訪');}
+function ratePlace(id,rating){pref(id).rating=Number(rating);savePlacePrefs();placeDetail(id);}
+function savePlaceReview(id){pref(id).review=$('place-review').value.trim();savePlacePrefs();placeDetail(id);toast('筆記已儲存');}
+function reportPlace(id){const body=$('place-report').value.trim();if(!body)throw new Error('請輸入要回報的內容');pref(id).reports.push({body,createdAt:new Date().toISOString()});savePlacePrefs();placeDetail(id);toast('資料回報已保存在本機');}
 function renderParks(){
   const q=parkSearch.trim().toLowerCase();
-  const list=parks.filter(p=>(parkCategory==='all'||(parkCategory==='pet'?p.pet_area==='official_listed':parkCategory==='large'?p.large:p.priority))&&(p.name+p.district+p.type+p.address).toLowerCase().includes(q)&&(!parkDistrict||p.district===parkDistrict)&&(!parkLocation||(parkLocation==='located'?Number.isFinite(p.lat):!Number.isFinite(p.lat))));
-  $('park-list').innerHTML=list.slice(0,parkLimit).map(p=>`<article class="card"><div class="walk-top"><b>${esc(p.name)}</b><span class="verification">${p.verification==='verified'?'官方座標':'座標待補'}</span></div><div class="park-tags">${p.pet_area==='official_listed'?'<span class="park-badge pet">🐾 寵物專區</span>':''}${p.large?'<span class="park-badge large">🌳 大型公園</span>':''}</div><p class="walk-meta">${esc(p.district)} · ${esc(p.type)}</p><p class="walk-meta">${esc(p.address||'地址請查看官方名錄')}</p>${p.large?`<p class="hint">${esc(p.size_note)}約 ${p.area_ha} 公頃 · <a href="${esc(p.size_source)}" target="_blank" rel="noopener">面積來源 ↗</a></p>`:''}${p.pet_area==='official_listed'?`<p class="hint"><a href="${esc(p.pet_source)}" target="_blank" rel="noopener">寵物專區來源 ↗</a></p>`:''}${p.status==='遊戲場修繕中'?'<p class="hint">遊戲場修繕中，請查開放公告。</p>':''}${p.pet_area==='official_listed'?'<p class="hint">設有寵物專區；入口與使用範圍請看現場告示。</p>':''}<div class="action-row">${button(Number.isFinite(p.lat)?'地圖與揪團':'查看揪團','park',p.id)}<a class="external-link" href="${esc(p.source_url)}" target="_blank" rel="noopener">官方來源 ↗</a><a class="external-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name+' 桃園市'+p.district)}" target="_blank" rel="noopener">查詢位置 ↗</a></div></article>`).join('')||empty('找不到這個公園','試試公園名稱或行政區。');
+  let list=places.filter(p=>(parkCategory==='all'||(parkCategory==='favorite'?pref(p.id).favorite:p.category===parkCategory))&&(p.name+p.district+p.subtype+p.address+p.detail).toLowerCase().includes(q)&&(!parkDistrict||p.district===parkDistrict)&&(!hospitalService||(hospitalService==='callable'?p.category==='vet'&&p.phone&&p.phone!=='－':hospitalService==='appointment'?p.appointment==='yes':p[hospitalService]===true)));
+  if(placeSort==='distance'&&userCoords)list.sort((a,b)=>(distanceKm(a)??Infinity)-(distanceKm(b)??Infinity));else if(placeSort==='name')list.sort((a,b)=>a.name.localeCompare(b.name,'zh-Hant'));else list.sort((a,b)=>Number(pref(b.id).favorite)-Number(pref(a.id).favorite)||Number(b.priority)-Number(a.priority)||a.category.localeCompare(b.category)||a.name.localeCompare(b.name,'zh-Hant'));
+  const label={park:'公園',pet:'寵物專區',vet:'動物醫院',store:'寵物門市'};
+  $('park-list').innerHTML=list.slice(0,parkLimit).map(p=>{const x=pref(p.id),d=distanceLabel(p);return `<article class="card place-card" data-category="${p.category}"><div class="place-title-row"><b>${esc(p.name)}</b><span class="place-kind">${label[p.category]}</span><button class="favorite-button ${x.favorite?'on':''}" data-action="favorite" data-id="${p.id}" aria-label="${x.favorite?'取消收藏':'加入收藏'}">♥</button></div><p class="walk-meta">${esc([p.district,p.subtype].filter(Boolean).join(' · '))}${d?` · <span class="place-distance">${d}</span>`:''}</p><p class="walk-meta">${esc(p.address||'地址或定位待官方補充')}</p>${hoursHtml(p)}${vetServicesHtml(p)}${p.detail?`<p class="place-detail">${esc(p.detail)}</p>`:''}${p.phone&&p.phone!=='－'?`<p class="place-detail">電話：<a class="place-phone" href="tel:${esc(p.phone)}">${esc(p.phone)}</a></p>`:''}<div class="place-history">${x.visitedAt?'<span>✓ 已到訪</span>':''}${x.rating?`<span>★ ${x.rating}/5</span>`:''}</div><div class="action-row">${button('查看詳情','placeDetail',p.id,'btn-green btn-sm')}${p.phone&&p.phone!=='－'?`<a class="btn-ghost btn-sm" href="tel:${esc(p.phone)}">直接撥打</a>`:''}<a class="btn-ghost btn-sm" href="${esc(p.mapUrl)}" target="_blank" rel="noopener">導航</a>${p.category==='park'?button('查看揪團','park',p.id):''}</div></article>`}).join('')||empty(parkCategory==='favorite'?'還沒有收藏地點':'找不到符合的地點',parkCategory==='favorite'?'看到想去的地方，點愛心收藏。':'試試名稱、地址或切換其他行政區。');
   if(list.length>parkLimit)$('park-list').insertAdjacentHTML('beforeend',button('顯示更多地點','moreParks','','btn-ghost'));
-  $('park-result').textContent=`找到 ${list.length} 筆 · 顯示 ${Math.min(parkLimit,list.length)} 筆 · 全市名錄持續補齊`;
+  $('park-result').textContent=`找到 ${list.length} 筆 · 顯示 ${Math.min(parkLimit,list.length)} 筆 · 官方公開資料更新至 2026 年`;
 }
 function renderFeed(){
   $('stories-row').innerHTML=button('＋ 發布動態','compose','','btn-green')+`<span class="hint">${mode==='demo'?'以下為示範貼文':'分享你和毛孩的日常'}</span>`;
@@ -125,7 +146,7 @@ async function savePet(){await act('savePet',{id:editingPetId,name:$('ob-name').
 async function pickPhoto(kind){$(kind==='ob'?'ob-file':'compose-file').click();}
 async function loadPhoto(input,kind){
   const file=input.files?.[0];if(!file)return;if(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>12*1024*1024)throw new Error('請選擇 12MB 以下 JPG、PNG 或 WebP 照片');
-  const url=URL.createObjectURL(file);try{const img=new Image();img.src=url;await img.decode();const scale=Math.min(1,900/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const result=canvas.toDataURL('image/jpeg',.78);if(!safePhoto(result))throw new Error('照片太大，請選擇較小的照片');if(kind==='ob')obPhoto=result;else composePhoto=result;$(kind==='ob'?'ob-preview':'compose-preview').innerHTML=photo({photo:result});}finally{URL.revokeObjectURL(url);input.value='';}
+  const url=URL.createObjectURL(file);try{const img=new Image();img.src=url;await img.decode();const scale=Math.min(1,900/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const result=canvas.toDataURL('image/jpeg',.78);if(!safePhoto(result))throw new Error('照片太大，請選擇較小的照片');if(kind==='ob'){obPhoto=result;$('ob-preview').innerHTML=photo({photo:result});}else if(kind==='place'){pref(activePlaceId).photo=result;savePlacePrefs();placeDetail(activePlaceId);toast('到訪照片已儲存於本機');}else{composePhoto=result;$('compose-preview').innerHTML=photo({photo:result});}}finally{URL.revokeObjectURL(url);input.value='';}
 }
 function deck(){const ids=new Set();return state.pets.filter(p=>{if(p.owner_id===me()||!p.discoverable||!visible(p.owner_id)||ids.has(p.owner_id)||state.swipes.some(s=>s.owner_id===me()&&s.target_id===p.owner_id))return false;ids.add(p.owner_id);return true;});}
 function renderDeck(){
@@ -155,7 +176,14 @@ async function authenticate(signup){
   if(data.session){await changeMode('cloud');toast('已登入');}else{drawer('<h3>請確認電子郵件</h3><p>請至信箱完成驗證，再回到 App 登入。</p>');}
 }
 function account(){
-  drawer(`<h3>帳號與資料</h3><label for="profile-name">你的暱稱</label><input id="profile-name" maxlength="60" value="${esc(owner(me()))}">${button('儲存暱稱','saveProfile','','btn-green')}<h4>使用模式</h4><div class="action-row">${button('本機模式','local')}${button('示範體驗','demo')}${button('雲端登入','cloud')}</div><p class="hint">本機與示範資料分開儲存；清除瀏覽器資料會遺失本機內容。</p><h4>資料備份</h4>${button('匯出本機備份','export')}${button('還原本機備份','chooseRestore')}${button('復原上次還原','undoRestore')}${button('匯入舊版資料','importLegacy')}<input type="file" id="backup-file" accept="application/json,.json" hidden><p class="hint">只匯入此瀏覽器舊版的毛孩、貼文和揪團；不會上傳至雲端。</p><h4>已封鎖用戶</h4>${state.blocks.filter(b=>b.owner_id===me()).map(b=>`<p>${esc(owner(b.target_id))} ${button('解除封鎖','unblock',b.target_id)}</p>`).join('')||'<p class="hint">尚無封鎖</p>'}${mode==='cloud'?button('登出','logout'):''}`);
+  drawer(`<h3>帳號與資料</h3><label for="profile-name">你的暱稱</label><input id="profile-name" maxlength="60" value="${esc(owner(me()))}">${button('儲存暱稱','saveProfile','','btn-green')}<h4>使用模式</h4><div class="action-row">${button('本機模式','local')}${button('示範體驗','demo')}${button('雲端登入','cloud')}</div><p class="hint">本機與示範資料分開儲存；清除瀏覽器資料會遺失本機內容。</p><h4>資料備份</h4>${button('匯出本機備份','export')}${button('還原本機備份','chooseRestore')}${button('復原上次還原','undoRestore')}${button('匯入舊版資料','importLegacy')}<input type="file" id="backup-file" accept="application/json,.json" hidden><p class="hint">只匯入此瀏覽器舊版的毛孩、貼文和揪團；不會上傳至雲端。</p><h4>已封鎖用戶</h4>${state.blocks.filter(b=>b.owner_id===me()).map(b=>`<p>${esc(owner(b.target_id))} ${button('解除封鎖','unblock',b.target_id)}</p>`).join('')||'<p class="hint">尚無封鎖</p>'}${mode==='cloud'?`<h4>雲端帳號</h4>${button('登出','logout')}${button('刪除帳號與所有資料','deleteAccount','','btn-ghost')}<p class="hint">刪除後無法復原，寵物檔案、貼文、留言、活動與互動紀錄都會一併移除。</p>`:''}`);
+}
+async function deleteAccount(){
+  if(mode!=='cloud'||!(repo instanceof CloudRepository))throw new Error('請先登入雲端帳號');
+  if(!confirm('永久刪除帳號與所有相關資料？此操作無法復原。'))return;
+  const typed=prompt('請輸入「刪除」以確認永久刪除帳號');if(typed!=='刪除')throw new Error('未完成刪除確認');
+  const deleting=repo;await deleting.deleteAccount();await client.auth.signOut({scope:'local'}).catch(()=>{});
+  await changeMode('local');toast('雲端帳號與相關資料已刪除');
 }
 function notifications(){const rows=state.notifications.filter(n=>n.user_id===me()).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));drawer('<h3>活動與配對通知</h3>'+rows.map(n=>`<div class="comment"><p>${esc(n.body)}</p><small>${fmt(n.created_at)}</small></div>`).join('')+(rows.length?'':'<p>目前沒有新通知。</p>')+button('全部標為已讀','readNotifications'));}
 function download(name,body,type){const u=URL.createObjectURL(new Blob([body],{type}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
@@ -172,8 +200,8 @@ async function importLegacy(){
 }
 const handlers={
   local:()=>changeMode('local'),demo:()=>changeMode('demo'),cloud:()=>changeMode('cloud'),account,notifications,closeDrawer:()=>closeOv('ov-profile'),
-  saveProfile:()=>act('profile',{display_name:$('profile-name').value}),login:()=>authenticate(false),signup:()=>authenticate(true),logout:async()=>{const {error}=await client.auth.signOut();if(error)throw error;await changeMode('local');},
-  newWalk:()=>openWalkForm(),editWalk:openWalkForm,walkDetail,park:gotoPark,moreParks:()=>{parkLimit+=30;renderParks();},
+  saveProfile:()=>act('profile',{display_name:$('profile-name').value}),login:()=>authenticate(false),signup:()=>authenticate(true),logout:async()=>{const {error}=await client.auth.signOut();if(error)throw error;await changeMode('local');},deleteAccount,
+  newWalk:()=>openWalkForm(),editWalk:openWalkForm,walkDetail,park:gotoPark,moreParks:()=>{parkLimit+=30;renderParks();},placeDetail,favorite:toggleFavorite,visitPlace,ratePlace:(id,b)=>ratePlace(id,b.dataset.rating),savePlaceReview,reportPlace,choosePlacePhoto:()=>$('place-photo-input').click(),
   joinWalk:async id=>{await act('joinWalk',{id},'已報名');walkDetail(id);},leaveWalk:async id=>{await act('leaveWalk',{id},'已退出');walkDetail(id);},
   cancelWalk:async id=>{if(!confirm('取消此活動？已報名者將在通知中看到取消訊息。'))return;await act('cancelWalk',{id},'活動已取消');walkDetail(id);},calendar,
   compose:openCompose,like:id=>act('likePost',{id},''),comments:showComments,addComment:async id=>{await act('addComment',{post_id:id,body:text($('comment-body').value,500)},'留言已送出');showComments(id);},removeComment:async id=>{await act('removeComment',{id},'已刪除留言');showComments(openPostId);},
@@ -189,23 +217,27 @@ const handlers={
   export:()=>{if(mode==='cloud')throw new Error('此按鈕僅匯出本機資料；請先切換本機模式');download('jiuhaogo-'+mode+'-'+day(Date.now())+'.json',JSON.stringify({version:2,mode,actor:me(),state},null,2),'application/json');},importLegacy,
   chooseRestore:()=>{if(mode!=='local')throw new Error('請切換本機模式再還原');const input=$('backup-file'),selected=repo;input.onchange=()=>run(async()=>{const file=input.files?.[0];if(!file)return;if(file.size>20*1024*1024)throw new Error('備份需小於20MB');const raw=await file.text();if(repo!==selected||mode!=='local'||mutating)throw new Error('模式已變更，請重新選擇備份');const restored=parseBackup(JSON.parse(raw),me());localStorage.setItem('jhg_v2_restore_previous',JSON.stringify(await repo.snapshot()));repo.write(restored);state=restored;render();closeOv('ov-profile');toast('已還原備份，可在設定復原上次還原');});input.click();},
   undoRestore:async()=>{if(mode!=='local')throw new Error('請切換本機模式');const saved=localStorage.getItem('jhg_v2_restore_previous');if(!saved)throw new Error('沒有上次還原紀錄');repo.write(JSON.parse(saved));await refresh();closeOv('ov-profile');toast('已復原還原前資料');},
-  allParks:()=>{$('map-category').value='all';map?.all();},locate:async()=>{await map?.locate();toast('地圖已移到你的位置；位置不會儲存或上傳。');},refresh:()=>refresh()
+  allParks:()=>{$('map-category').value='all';map?.all();},locate:async()=>{await map?.locate();toast('地圖已移到你的位置；位置不會儲存或上傳。');},locatePlaces:async()=>{userCoords=await placesMap?.locate();placeSort='distance';$('place-sort').value='distance';renderParks();toast('已依距離排序；位置不會儲存或上傳。');},refresh:()=>refresh()
 };
-document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=handlers[b.dataset.action];if(!fn)return;b.disabled=true;run(()=>fn(b.dataset.id)).finally(()=>{b.disabled=false;});});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const fn=handlers[b.dataset.action];if(!fn)return;b.disabled=true;run(()=>fn(b.dataset.id,b)).finally(()=>{b.disabled=false;});});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay.show').forEach(n=>closeOv(n.id));closePop();}if((e.key==='Enter'||e.key===' ')&&e.target.matches('.preview[role=button]')){e.preventDefault();e.target.click();}const modal=document.querySelector('.overlay.show,.match-pop.show');if(modal&&e.key==='Tab'){const items=[...modal.querySelectorAll('button:not([disabled]),input:not([hidden]):not([type=file]),select,textarea,a[href]')].filter(n=>n.getClientRects().length);if(!items.length)return;const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
-const globals={switchTab,toast,closeOv,openCompose,publishPost,openWalkForm,createWalk,openPetForm,savePet,pickPhoto,pickObPhoto:i=>loadPhoto(i,'ob'),pickComposePhoto:i=>loadPhoto(i,'compose'),swipeCard,undoMatch,resetMatch,closePop,matchToWalk,segServe:which=>{$('serve-gig').hidden=which!=='gig';$('serve-shop').hidden=which!=='shop';$('seg-gig').classList.toggle('on',which==='gig');$('seg-shop').classList.toggle('on',which==='shop');},resetAll:account};
+const globals={switchTab,toast,closeOv,openCompose,publishPost,openWalkForm,createWalk,openPetForm,savePet,pickPhoto,pickObPhoto:i=>loadPhoto(i,'ob'),pickComposePhoto:i=>loadPhoto(i,'compose'),pickPlacePhoto:i=>loadPhoto(i,'place'),swipeCard,undoMatch,resetMatch,closePop,matchToWalk,segServe:which=>{$('serve-gig').hidden=which!=='gig';$('serve-shop').hidden=which!=='shop';$('seg-gig').classList.toggle('on',which==='gig');$('seg-shop').classList.toggle('on',which==='shop');},resetAll:account};
 Object.entries(globals).forEach(([name,fn])=>window[name]=(...args)=>run(()=>fn(...args)));
 async function init(){
-  const r=await fetch('data/parks.json');if(!r.ok)throw new Error('公園資料載入失敗');parks=(await r.json()).parks;
+  const [r,pr]=await Promise.all([fetch('data/parks.json'),fetch('data/places.json')]);if(!r.ok||!pr.ok)throw new Error('地點資料載入失敗');parks=(await r.json()).parks;places=(await pr.json()).places;
   $('map-data-note').textContent=`先標註 ${parks.filter(p=>p.priority).length} 處重點：${parks.filter(p=>p.large).length} 處大型公園、${parks.filter(p=>p.pet_area==='official_listed').length} 處寵物專區（部分重疊）。可切換全部 ${parks.length} 筆名錄。`;
   $('wf-park').innerHTML=parks.map(p=>`<option value="${p.id}">${esc(p.district+' · '+p.name)}</option>`).join('');$('park-filter').innerHTML='<option value="">全部公園</option>'+$('wf-park').innerHTML;
-  $('park-district').innerHTML='<option value="">桃園全市</option>'+[...new Set(parks.map(p=>p.district))].map(d=>`<option>${esc(d)}</option>`).join('');
-  $('park-category').onchange=e=>{parkCategory=e.target.value;parkLimit=30;renderParks();};$('map-category').onchange=e=>map?.filter(e.target.value);
-  $('park-district').onchange=e=>{parkDistrict=e.target.value;parkLimit=30;renderParks();};$('park-location').onchange=e=>{parkLocation=e.target.value;parkLimit=30;renderParks();};
+  $('park-district').innerHTML='<option value="">桃園全市</option>'+[...new Set(places.map(p=>p.district).filter(Boolean))].sort().map(d=>`<option>${esc(d)}</option>`).join('');
+  for(const kind of ['all','pet','park','vet','store'])$('count-'+kind).textContent=kind==='all'?places.length:places.filter(p=>p.category===kind).length;updateFavoriteCount();
+  document.querySelectorAll('[data-place-category]').forEach(b=>b.onclick=()=>{parkCategory=b.dataset.placeCategory;parkLimit=30;document.querySelectorAll('[data-place-category]').forEach(n=>n.classList.toggle('on',n===b));$('hospital-service-wrap').hidden=parkCategory!=='vet';if(parkCategory!=='vet'){hospitalService='';$('hospital-service').value='';}placesMap?.filter(parkCategory==='favorite'?'all':parkCategory);renderParks();});$('map-category').onchange=e=>map?.filter(e.target.value);
+  $('park-district').onchange=e=>{parkDistrict=e.target.value;parkLimit=30;renderParks();};$('place-sort').onchange=e=>run(async()=>{placeSort=e.target.value;if(placeSort==='distance'&&!userCoords){userCoords=await placesMap?.locate();toast('已依距離排序；位置不會儲存或上傳。');}parkLimit=30;renderParks();});
+  $('hospital-service').onchange=e=>{hospitalService=e.target.value;parkLimit=30;renderParks();};
   $('park-filter').onchange=e=>{parkFilter=e.target.value;renderWalks();if(parkFilter)map?.show(parkFilter);};$('walk-filter').onchange=e=>{walkFilter=e.target.value;renderWalks();};$('park-search').oninput=e=>{parkSearch=e.target.value;parkLimit=30;renderParks();};
   if(cloudReady(config)){if(!window.supabase)throw new Error('雲端元件載入失敗');client=window.supabase.createClient(config.supabaseUrl,config.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});}
   if(mode==='cloud'&&!client)mode='local';await changeMode(mode);if(!repo){await changeMode('local');openAuth();}
   map=new ParkMap('real-map',parks,gotoPark,msg=>{$('map-error').textContent=msg;$('map-error').hidden=false;});
+  placesMap=new PlacesMap('places-map',places,msg=>toast(msg));
+  const requestedTab=new URLSearchParams(location.search).get('tab');if(['home','walk','map','match','dog','serve'].includes(requestedTab))switchTab(requestedTab);
   $('load-error').hidden=true;
   window.addEventListener('storage',e=>{if(e.key===repo?.key)run(refresh);});
   window.addEventListener('online',()=>{toast('網路已恢復');if(mode==='cloud')run(refresh);});

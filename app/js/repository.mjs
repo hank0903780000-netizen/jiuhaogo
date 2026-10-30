@@ -35,6 +35,7 @@ export class CloudRepository {
   constructor(client,user){this.client=client;this.actor=user.id;this.mode='cloud';}
   async result(query){const {data,error}=await query;if(error)throw new Error(error.message);return data;}
   async snapshot(){const rows=await Promise.all(TABLES.map(t=>this.result(this.client.from('jhg_'+t).select('*'))));return Object.fromEntries(TABLES.map((t,i)=>[t,rows[i]||[]]));}
+  async deleteAccount(){await this.result(this.client.rpc('jhg_delete_account',{p_confirmation:'DELETE'}));}
   async dispatch(action){
     const d=action.data||{}, c=this.client, uid=this.actor;
     const insert=(table,row)=>this.result(c.from('jhg_'+table).insert(row));

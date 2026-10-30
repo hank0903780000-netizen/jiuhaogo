@@ -176,7 +176,14 @@ async function authenticate(signup){
   if(data.session){await changeMode('cloud');toast('已登入');}else{drawer('<h3>請確認電子郵件</h3><p>請至信箱完成驗證，再回到 App 登入。</p>');}
 }
 function account(){
-  drawer(`<h3>帳號與資料</h3><label for="profile-name">你的暱稱</label><input id="profile-name" maxlength="60" value="${esc(owner(me()))}">${button('儲存暱稱','saveProfile','','btn-green')}<h4>使用模式</h4><div class="action-row">${button('本機模式','local')}${button('示範體驗','demo')}${button('雲端登入','cloud')}</div><p class="hint">本機與示範資料分開儲存；清除瀏覽器資料會遺失本機內容。</p><h4>資料備份</h4>${button('匯出本機備份','export')}${button('還原本機備份','chooseRestore')}${button('復原上次還原','undoRestore')}${button('匯入舊版資料','importLegacy')}<input type="file" id="backup-file" accept="application/json,.json" hidden><p class="hint">只匯入此瀏覽器舊版的毛孩、貼文和揪團；不會上傳至雲端。</p><h4>已封鎖用戶</h4>${state.blocks.filter(b=>b.owner_id===me()).map(b=>`<p>${esc(owner(b.target_id))} ${button('解除封鎖','unblock',b.target_id)}</p>`).join('')||'<p class="hint">尚無封鎖</p>'}${mode==='cloud'?button('登出','logout'):''}`);
+  drawer(`<h3>帳號與資料</h3><label for="profile-name">你的暱稱</label><input id="profile-name" maxlength="60" value="${esc(owner(me()))}">${button('儲存暱稱','saveProfile','','btn-green')}<h4>使用模式</h4><div class="action-row">${button('本機模式','local')}${button('示範體驗','demo')}${button('雲端登入','cloud')}</div><p class="hint">本機與示範資料分開儲存；清除瀏覽器資料會遺失本機內容。</p><h4>資料備份</h4>${button('匯出本機備份','export')}${button('還原本機備份','chooseRestore')}${button('復原上次還原','undoRestore')}${button('匯入舊版資料','importLegacy')}<input type="file" id="backup-file" accept="application/json,.json" hidden><p class="hint">只匯入此瀏覽器舊版的毛孩、貼文和揪團；不會上傳至雲端。</p><h4>已封鎖用戶</h4>${state.blocks.filter(b=>b.owner_id===me()).map(b=>`<p>${esc(owner(b.target_id))} ${button('解除封鎖','unblock',b.target_id)}</p>`).join('')||'<p class="hint">尚無封鎖</p>'}${mode==='cloud'?`<h4>雲端帳號</h4>${button('登出','logout')}${button('刪除帳號與所有資料','deleteAccount','','btn-ghost')}<p class="hint">刪除後無法復原，寵物檔案、貼文、留言、活動與互動紀錄都會一併移除。</p>`:''}`);
+}
+async function deleteAccount(){
+  if(mode!=='cloud'||!(repo instanceof CloudRepository))throw new Error('請先登入雲端帳號');
+  if(!confirm('永久刪除帳號與所有相關資料？此操作無法復原。'))return;
+  const typed=prompt('請輸入「刪除」以確認永久刪除帳號');if(typed!=='刪除')throw new Error('未完成刪除確認');
+  const deleting=repo;await deleting.deleteAccount();await client.auth.signOut({scope:'local'}).catch(()=>{});
+  await changeMode('local');toast('雲端帳號與相關資料已刪除');
 }
 function notifications(){const rows=state.notifications.filter(n=>n.user_id===me()).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at));drawer('<h3>活動與配對通知</h3>'+rows.map(n=>`<div class="comment"><p>${esc(n.body)}</p><small>${fmt(n.created_at)}</small></div>`).join('')+(rows.length?'':'<p>目前沒有新通知。</p>')+button('全部標為已讀','readNotifications'));}
 function download(name,body,type){const u=URL.createObjectURL(new Blob([body],{type}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
@@ -193,7 +200,7 @@ async function importLegacy(){
 }
 const handlers={
   local:()=>changeMode('local'),demo:()=>changeMode('demo'),cloud:()=>changeMode('cloud'),account,notifications,closeDrawer:()=>closeOv('ov-profile'),
-  saveProfile:()=>act('profile',{display_name:$('profile-name').value}),login:()=>authenticate(false),signup:()=>authenticate(true),logout:async()=>{const {error}=await client.auth.signOut();if(error)throw error;await changeMode('local');},
+  saveProfile:()=>act('profile',{display_name:$('profile-name').value}),login:()=>authenticate(false),signup:()=>authenticate(true),logout:async()=>{const {error}=await client.auth.signOut();if(error)throw error;await changeMode('local');},deleteAccount,
   newWalk:()=>openWalkForm(),editWalk:openWalkForm,walkDetail,park:gotoPark,moreParks:()=>{parkLimit+=30;renderParks();},placeDetail,favorite:toggleFavorite,visitPlace,ratePlace:(id,b)=>ratePlace(id,b.dataset.rating),savePlaceReview,reportPlace,choosePlacePhoto:()=>$('place-photo-input').click(),
   joinWalk:async id=>{await act('joinWalk',{id},'已報名');walkDetail(id);},leaveWalk:async id=>{await act('leaveWalk',{id},'已退出');walkDetail(id);},
   cancelWalk:async id=>{if(!confirm('取消此活動？已報名者將在通知中看到取消訊息。'))return;await act('cancelWalk',{id},'活動已取消');walkDetail(id);},calendar,
